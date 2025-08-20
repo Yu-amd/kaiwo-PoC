@@ -26,40 +26,40 @@ import (
 type GPUManager interface {
 	// Initialize initializes the GPU manager
 	Initialize(ctx context.Context) error
-	
+
 	// Shutdown shuts down the GPU manager
 	Shutdown(ctx context.Context) error
-	
+
 	// GetGPUType returns the GPU type managed by this manager
 	GetGPUType() types.GPUType
-	
+
 	// ListGPUs lists all available GPUs
 	ListGPUs(ctx context.Context) ([]*types.GPUInfo, error)
-	
+
 	// GetGPUInfo gets information about a specific GPU
 	GetGPUInfo(ctx context.Context, deviceID string) (*types.GPUInfo, error)
-	
+
 	// AllocateGPU allocates a GPU for a request
 	AllocateGPU(ctx context.Context, request *types.AllocationRequest) (*types.AllocationResult, error)
-	
+
 	// ReleaseGPU releases a GPU allocation
 	ReleaseGPU(ctx context.Context, allocationID string) error
-	
+
 	// GetGPUStats gets GPU statistics
 	GetGPUStats(ctx context.Context) (*types.GPUStats, error)
-	
+
 	// UpdateGPUInfo updates GPU information
 	UpdateGPUInfo(ctx context.Context, deviceID string) error
-	
+
 	// ValidateAllocation validates if an allocation is possible
 	ValidateAllocation(ctx context.Context, request *types.AllocationRequest) error
-	
+
 	// GetAllocation gets information about a specific allocation
 	GetAllocation(ctx context.Context, allocationID string) (*types.GPUAllocation, error)
-	
+
 	// ListAllocations lists all active allocations
 	ListAllocations(ctx context.Context) ([]*types.GPUAllocation, error)
-	
+
 	// GetMetrics gets allocation metrics
 	GetMetrics(ctx context.Context) (*types.AllocationMetrics, error)
 }
@@ -68,28 +68,28 @@ type GPUManager interface {
 type GPUManagerConfig struct {
 	// GPUType is the type of GPU to manage
 	GPUType types.GPUType `json:"gpuType"`
-	
+
 	// PollingInterval is the interval for polling GPU information
 	PollingInterval time.Duration `json:"pollingInterval"`
-	
+
 	// AllocationTimeout is the timeout for GPU allocations
 	AllocationTimeout time.Duration `json:"allocationTimeout"`
-	
+
 	// DefaultStrategy is the default allocation strategy
 	DefaultStrategy types.AllocationStrategy `json:"defaultStrategy"`
-	
+
 	// EnableSharing indicates if GPU sharing is enabled
 	EnableSharing bool `json:"enableSharing"`
-	
+
 	// MaxFraction is the maximum fractional allocation
 	MaxFraction float64 `json:"maxFraction"`
-	
+
 	// MinFraction is the minimum fractional allocation
 	MinFraction float64 `json:"minFraction"`
-	
+
 	// AllowedIsolationTypes is the list of allowed isolation types
 	AllowedIsolationTypes []types.GPUIsolationType `json:"allowedIsolationTypes"`
-	
+
 	// NodeSelector is the node selector for GPU discovery
 	NodeSelector map[string]string `json:"nodeSelector,omitempty"`
 }
@@ -98,22 +98,22 @@ type GPUManagerConfig struct {
 type GPUManagerFactory interface {
 	// CreateManager creates a new GPU manager
 	CreateManager(config *GPUManagerConfig) (GPUManager, error)
-	
+
 	// GetSupportedTypes returns the supported GPU types
 	GetSupportedTypes() []types.GPUType
 }
 
 // BaseGPUManager provides common functionality for GPU managers
 type BaseGPUManager struct {
-	config *GPUManagerConfig
+	config      *GPUManagerConfig
 	allocations map[string]*types.GPUAllocation
-	metrics *types.AllocationMetrics
+	metrics     *types.AllocationMetrics
 }
 
 // NewBaseGPUManager creates a new base GPU manager
 func NewBaseGPUManager(config *GPUManagerConfig) *BaseGPUManager {
 	return &BaseGPUManager{
-		config: config,
+		config:      config,
 		allocations: make(map[string]*types.GPUAllocation),
 		metrics: &types.AllocationMetrics{
 			LastUpdated: time.Now(),
@@ -136,30 +136,30 @@ func (b *BaseGPUManager) ValidateAllocation(ctx context.Context, request *types.
 	if request == nil {
 		return fmt.Errorf("allocation request cannot be nil")
 	}
-	
+
 	if err := types.ValidateAllocationRequest(request); err != nil {
 		return fmt.Errorf("invalid allocation request: %v", err)
 	}
-	
+
 	// Check if GPU sharing is enabled if requested
 	if request.GPURequest.SharingEnabled && !b.config.EnableSharing {
 		return fmt.Errorf("GPU sharing is not enabled")
 	}
-	
+
 	// Check fraction limits
 	if request.GPURequest.Fraction < b.config.MinFraction {
 		return fmt.Errorf("GPU fraction %f is below minimum %f", request.GPURequest.Fraction, b.config.MinFraction)
 	}
-	
+
 	if request.GPURequest.Fraction > b.config.MaxFraction {
 		return fmt.Errorf("GPU fraction %f is above maximum %f", request.GPURequest.Fraction, b.config.MaxFraction)
 	}
-	
+
 	// Check isolation type
 	if !b.isIsolationTypeAllowed(request.GPURequest.IsolationType) {
 		return fmt.Errorf("isolation type %s is not allowed", request.GPURequest.IsolationType)
 	}
-	
+
 	return nil
 }
 
@@ -169,7 +169,7 @@ func (b *BaseGPUManager) GetAllocation(ctx context.Context, allocationID string)
 	if !exists {
 		return nil, fmt.Errorf("allocation %s not found", allocationID)
 	}
-	
+
 	return allocation, nil
 }
 
@@ -179,7 +179,7 @@ func (b *BaseGPUManager) ListAllocations(ctx context.Context) ([]*types.GPUAlloc
 	for _, allocation := range b.allocations {
 		allocations = append(allocations, allocation)
 	}
-	
+
 	return allocations, nil
 }
 
@@ -187,7 +187,7 @@ func (b *BaseGPUManager) ListAllocations(ctx context.Context) ([]*types.GPUAlloc
 func (b *BaseGPUManager) GetMetrics(ctx context.Context) (*types.AllocationMetrics, error) {
 	// Update metrics
 	b.updateMetrics()
-	
+
 	return b.metrics, nil
 }
 
@@ -197,16 +197,16 @@ func (b *BaseGPUManager) ReleaseGPU(ctx context.Context, allocationID string) er
 	if !exists {
 		return fmt.Errorf("allocation %s not found", allocationID)
 	}
-	
+
 	// Update allocation status
 	allocation.Status = types.GPUAllocationStatusCompleted
-	
+
 	// Remove from active allocations
 	delete(b.allocations, allocationID)
-	
+
 	// Update metrics
 	b.metrics.ActiveAllocations--
-	
+
 	return nil
 }
 
@@ -233,13 +233,7 @@ func (b *BaseGPUManager) addAllocation(allocation *types.GPUAllocation) {
 	b.metrics.SuccessfulAllocations++
 }
 
-// removeAllocation removes an allocation from the manager
-func (b *BaseGPUManager) removeAllocation(allocationID string) {
-	if _, exists := b.allocations[allocationID]; exists {
-		delete(b.allocations, allocationID)
-		b.metrics.ActiveAllocations--
-	}
-}
+
 
 // DefaultGPUManagerFactory is the default GPU manager factory
 type DefaultGPUManagerFactory struct{}
@@ -271,46 +265,46 @@ func ValidateGPUManagerConfig(config *GPUManagerConfig) error {
 	if config == nil {
 		return fmt.Errorf("configuration cannot be nil")
 	}
-	
+
 	switch config.GPUType {
 	case types.GPUTypeAMD:
 		// Valid GPU type
 	default:
 		return fmt.Errorf("unsupported GPU type: %s", config.GPUType)
 	}
-	
+
 	if config.PollingInterval <= 0 {
 		return fmt.Errorf("polling interval must be positive, got %v", config.PollingInterval)
 	}
-	
+
 	if config.AllocationTimeout <= 0 {
 		return fmt.Errorf("allocation timeout must be positive, got %v", config.AllocationTimeout)
 	}
-	
+
 	switch config.DefaultStrategy {
 	case types.AllocationStrategyFirstFit, types.AllocationStrategyBestFit, types.AllocationStrategyWorstFit,
-		 types.AllocationStrategyRoundRobin, types.AllocationStrategyLoadBalanced:
+		types.AllocationStrategyRoundRobin, types.AllocationStrategyLoadBalanced:
 		// Valid strategy
 	default:
 		return fmt.Errorf("invalid default strategy: %s", config.DefaultStrategy)
 	}
-	
+
 	if config.MaxFraction < 0.1 || config.MaxFraction > 1.0 {
 		return fmt.Errorf("max fraction must be between 0.1 and 1.0, got %f", config.MaxFraction)
 	}
-	
+
 	if config.MinFraction < 0.1 || config.MinFraction > 1.0 {
 		return fmt.Errorf("min fraction must be between 0.1 and 1.0, got %f", config.MinFraction)
 	}
-	
+
 	if config.MinFraction > config.MaxFraction {
 		return fmt.Errorf("min fraction cannot be greater than max fraction")
 	}
-	
+
 	if len(config.AllowedIsolationTypes) == 0 {
 		return fmt.Errorf("at least one isolation type must be allowed")
 	}
-	
+
 	for _, isolationType := range config.AllowedIsolationTypes {
 		switch isolationType {
 		case types.GPUIsolationMPS, types.GPUIsolationMIG, types.GPUIsolationNone:
@@ -319,6 +313,6 @@ func ValidateGPUManagerConfig(config *GPUManagerConfig) error {
 			return fmt.Errorf("invalid isolation type: %s", isolationType)
 		}
 	}
-	
+
 	return nil
 }
