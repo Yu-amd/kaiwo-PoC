@@ -1,42 +1,16 @@
-Kaiwo Comprehensive Test Results - Wed Aug 20 12:29:47 PM PDT 2025
-[0;34m[INFO][0m 2025-08-20 12:29:47: Starting comprehensive test suite...
-[0;34m[INFO][0m 2025-08-20 12:29:47: Project root: /home/yw/Desktop/kaiwo-PoC
-[0;34m[INFO][0m 2025-08-20 12:29:47: CI config: /home/yw/Desktop/kaiwo-PoC/test/ci-config.yaml
-[0;34m[INFO][0m 2025-08-20 12:29:47: Checking prerequisites...
-[1;33m[WARNING][0m 2025-08-20 12:29:47: Kind is not installed - some tests may fail
-[0;32m[SUCCESS][0m 2025-08-20 12:29:47: Prerequisites check completed
-[0;34m[INFO][0m 2025-08-20 12:29:47: Phases to run: code-quality unit-tests integration-tests e2e-tests performance-tests security-tests docs-tests build-tests
-[0;34m[INFO][0m 2025-08-20 12:29:47: Starting phase: code-quality
-[0;34m[INFO][0m 2025-08-20 12:29:47: Running code quality checks...
-[0;34m[INFO][0m 2025-08-20 12:29:47: DRY RUN: Would run code quality checks
-[0;32m[SUCCESS][0m 2025-08-20 12:29:47: Phase code-quality completed successfully
-[0;34m[INFO][0m 2025-08-20 12:29:47: Starting phase: unit-tests
-[0;34m[INFO][0m 2025-08-20 12:29:47: Running unit tests...
-[0;34m[INFO][0m 2025-08-20 12:29:47: DRY RUN: Would run unit tests
-[0;32m[SUCCESS][0m 2025-08-20 12:29:47: Phase unit-tests completed successfully
-[0;34m[INFO][0m 2025-08-20 12:29:47: Starting phase: integration-tests
-[0;34m[INFO][0m 2025-08-20 12:29:47: Running integration tests...
-[0;34m[INFO][0m 2025-08-20 12:29:47: DRY RUN: Would run integration tests
-[0;32m[SUCCESS][0m 2025-08-20 12:29:47: Phase integration-tests completed successfully
-[0;34m[INFO][0m 2025-08-20 12:29:47: Starting phase: e2e-tests
-[0;34m[INFO][0m 2025-08-20 12:29:47: Running end-to-end tests...
-[0;34m[INFO][0m 2025-08-20 12:29:47: DRY RUN: Would run e2e tests
-[0;32m[SUCCESS][0m 2025-08-20 12:29:47: Phase e2e-tests completed successfully
-[0;34m[INFO][0m 2025-08-20 12:29:47: Starting phase: performance-tests
-[0;34m[INFO][0m 2025-08-20 12:29:47: Running performance tests...
-[0;34m[INFO][0m 2025-08-20 12:29:47: DRY RUN: Would run performance tests
-[0;32m[SUCCESS][0m 2025-08-20 12:29:47: Phase performance-tests completed successfully
-[0;34m[INFO][0m 2025-08-20 12:29:47: Starting phase: security-tests
-[0;34m[INFO][0m 2025-08-20 12:29:47: Running security tests...
-[0;34m[INFO][0m 2025-08-20 12:29:47: DRY RUN: Would run security tests
-[0;32m[SUCCESS][0m 2025-08-20 12:29:47: Phase security-tests completed successfully
-[0;34m[INFO][0m 2025-08-20 12:29:47: Starting phase: docs-tests
-[0;34m[INFO][0m 2025-08-20 12:29:47: Running documentation tests...
-[0;34m[INFO][0m 2025-08-20 12:29:47: DRY RUN: Would run documentation tests
-[0;32m[SUCCESS][0m 2025-08-20 12:29:47: Phase docs-tests completed successfully
-[0;34m[INFO][0m 2025-08-20 12:29:47: Starting phase: build-tests
-[0;34m[INFO][0m 2025-08-20 12:29:47: Running build tests...
-[0;34m[INFO][0m 2025-08-20 12:29:47: DRY RUN: Would run build tests
-[0;32m[SUCCESS][0m 2025-08-20 12:29:47: Phase build-tests completed successfully
-[0;32m[SUCCESS][0m 2025-08-20 12:29:47: All test phases completed successfully!
-[0;32m[SUCCESS][0m 2025-08-20 12:29:47: Ready for four-phase implementation roadmap!
+Kaiwo Comprehensive Test Results - Wed Aug 20 12:35:44 PM PDT 2025
+[0;34m[INFO][0m 2025-08-20 12:35:44: Starting comprehensive test suite...
+[0;34m[INFO][0m 2025-08-20 12:35:44: Project root: /home/yw/Desktop/kaiwo-PoC
+[0;34m[INFO][0m 2025-08-20 12:35:44: CI config: /home/yw/Desktop/kaiwo-PoC/test/ci-config.yaml
+[0;34m[INFO][0m 2025-08-20 12:35:44: Checking prerequisites...
+[0;32m[SUCCESS][0m 2025-08-20 12:35:44: Prerequisites check completed
+[0;34m[INFO][0m 2025-08-20 12:35:44: Phases to run: code-quality
+[0;34m[INFO][0m 2025-08-20 12:35:44: Starting phase: code-quality
+[0;34m[INFO][0m 2025-08-20 12:35:44: Running code quality checks...
+[0;34m[INFO][0m 2025-08-20 12:35:44: Running Go linter...
+[0;34m[INFO][0m 2025-08-20 12:35:46: Running Go vet...
+[0;34m[INFO][0m 2025-08-20 12:35:47: Checking Go formatting...
+[0;31m[ERROR][0m 2025-08-20 12:35:47: Code is not formatted. Please run 'go fmt ./...'
+[0;31m[ERROR][0m 2025-08-20 12:35:47: Phase code-quality failed
+[0;31m[ERROR][0m 2025-08-20 12:35:47: The following phases failed: code-quality
+[0;31m[ERROR][0m 2025-08-20 12:35:47: Please fix the issues before proceeding with implementation

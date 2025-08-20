@@ -112,6 +112,11 @@ check_prerequisites() {
         exit 1
     fi
     
+    # Check if we're in an externally managed environment
+    if python3 -c "import sys; print('externally-managed' in sys.modules)" 2>/dev/null | grep -q "True"; then
+        log "WARNING" "Python environment is externally managed - some Python tests may be skipped"
+    fi
+    
     # Check Docker
     if ! command -v docker &> /dev/null; then
         log "WARNING" "Docker is not installed - some tests may fail"
@@ -157,15 +162,22 @@ run_code_quality() {
     # Python code quality
     log "INFO" "Running Python linters..."
     cd python
-    python -m pip install --upgrade pip
-    pip install -r requirements-dev.txt
     
-    flake8 kaiwo
-    black --check kaiwo
-    isort --check-only kaiwo
-    
-    log "INFO" "Running Python type checking..."
-    mypy kaiwo --ignore-missing-imports
+    # Check if we can install Python packages
+    if python3 -c "import sys; print('externally-managed' in sys.modules)" 2>/dev/null | grep -q "True"; then
+        log "WARNING" "Skipping Python linting due to externally managed environment"
+        log "WARNING" "Consider using a virtual environment for Python development"
+    else
+        python3 -m pip install --upgrade pip
+        pip install -r requirements-dev.txt
+        
+        flake8 kaiwo
+        black --check kaiwo
+        isort --check-only kaiwo
+        
+        log "INFO" "Running Python type checking..."
+        mypy kaiwo --ignore-missing-imports
+    fi
     
     cd "$PROJECT_ROOT"
     log "SUCCESS" "Code quality checks completed"
