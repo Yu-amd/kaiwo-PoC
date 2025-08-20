@@ -247,37 +247,8 @@ else
     print_success "kubectx and kubens already installed"
 fi
 
-# Install kubectl plugins
-print_step "Installing kubectl plugins..."
-
-# Install kubectl tree plugin
-if ! kubectl tree --help &> /dev/null; then
-    curl -L https://github.com/ahmetb/kubectl-tree/releases/download/v0.2.1/kubectl-tree_v0.2.1_linux_amd64.tar.gz | tar -xz
-    sudo mv kubectl-tree /usr/local/bin/
-    print_success "kubectl tree plugin installed"
-else
-    print_success "kubectl tree plugin already installed"
+# Install kubectl plugins (optional)
 fi
-
-# Install kubectl neat plugin
-if ! kubectl neat --help &> /dev/null; then
-    curl -s https://raw.githubusercontent.com/itaysk/kubectl-neat/master/install.sh | bash
-    print_success "kubectl neat plugin installed"
-else
-    print_success "kubectl neat plugin already installed"
-fi
-
-# Install VS Code extensions (if VS Code is installed)
-print_step "Installing VS Code extensions..."
-if command -v code &> /dev/null; then
-    # Go extension
-    code --install-extension golang.go
-    
-    # Kubernetes extension
-    code --install-extension ms-kubernetes-tools.vscode-kubernetes-tools
-    
-    # YAML extension
-    code --install-extension redhat.vscode-yaml
     
     # Docker extension
     code --install-extension ms-azuretools.vscode-docker
