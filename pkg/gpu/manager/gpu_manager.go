@@ -233,8 +233,6 @@ func (b *BaseGPUManager) addAllocation(allocation *types.GPUAllocation) {
 	b.metrics.SuccessfulAllocations++
 }
 
-
-
 // DefaultGPUManagerFactory is the default GPU manager factory
 type DefaultGPUManagerFactory struct{}
 

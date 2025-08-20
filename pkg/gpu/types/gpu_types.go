@@ -18,6 +18,7 @@ import (
 	"fmt"
 	"strconv"
 	"strings"
+	"time"
 
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
@@ -349,4 +350,46 @@ type GPUStats struct {
 
 	// ActiveAllocations is the number of active GPU allocations
 	ActiveAllocations int `json:"activeAllocations"`
+}
+
+// MPSConnectionInfo contains connection information for MPS
+type MPSConnectionInfo struct {
+	GPUID     string    `json:"gpu_id"`
+	Port      int       `json:"port"`
+	Host      string    `json:"host"`
+	Protocol  string    `json:"protocol"`
+	Status    string    `json:"status"`
+	StartTime time.Time `json:"start_time"`
+}
+
+// MPSStats contains statistics about MPS usage
+type MPSStats struct {
+	TotalServers    int                           `json:"total_servers"`
+	RunningServers  int                           `json:"running_servers"`
+	StoppedServers  int                           `json:"stopped_servers"`
+	ErrorServers    int                           `json:"error_servers"`
+	StartingServers int                           `json:"starting_servers"`
+	ServerDetails   map[string]MPSServerStats     `json:"server_details"`
+}
+
+// MPSServerStats contains statistics for a specific MPS server
+type MPSServerStats struct {
+	ID        string        `json:"id"`
+	Status    string        `json:"status"`
+	Port      int           `json:"port"`
+	StartTime time.Time     `json:"start_time"`
+	Uptime    time.Duration `json:"uptime"`
+}
+
+// ReservationStats contains statistics about GPU reservations
+type ReservationStats struct {
+	TotalReservations     int               `json:"total_reservations"`
+	PendingReservations   int               `json:"pending_reservations"`
+	ActiveReservations    int               `json:"active_reservations"`
+	CompletedReservations int               `json:"completed_reservations"`
+	CancelledReservations int               `json:"cancelled_reservations"`
+	ExpiredReservations   int               `json:"expired_reservations"`
+	ReservationsByGPU     map[string]int    `json:"reservations_by_gpu"`
+	ReservationsByUser    map[string]int    `json:"reservations_by_user"`
+	ReservationsByStatus  map[string]int    `json:"reservations_by_status"`
 }

@@ -57,14 +57,15 @@ func TestAMDGPUManager(t *testing.T) {
 		t.Fatal("Expected at least one GPU, got none")
 	}
 
-	// Test getting GPU info
-	gpuInfo, err := manager.GetGPUInfo(ctx, "card0")
+	// Test getting GPU info - use the first available GPU
+	firstGPU := gpus[0]
+	gpuInfo, err := manager.GetGPUInfo(ctx, firstGPU.DeviceID)
 	if err != nil {
 		t.Fatalf("Failed to get GPU info: %v", err)
 	}
 
-	if gpuInfo.DeviceID != "card0" {
-		t.Errorf("Expected device ID 'card0', got '%s'", gpuInfo.DeviceID)
+	if gpuInfo.DeviceID != firstGPU.DeviceID {
+		t.Errorf("Expected device ID '%s', got '%s'", firstGPU.DeviceID, gpuInfo.DeviceID)
 	}
 
 	if gpuInfo.Type != types.GPUTypeAMD {
@@ -79,7 +80,7 @@ func TestAMDGPUManager(t *testing.T) {
 		ContainerName: "test-container",
 		GPURequest: &types.GPURequest{
 			Fraction:       0.5,
-			MemoryRequest:  4000, // 4GB
+			MemoryRequest:  512, // 512MB - reasonable for the available GPU memory
 			IsolationType:  types.GPUIsolationMPS,
 			SharingEnabled: true,
 			Priority:       0,

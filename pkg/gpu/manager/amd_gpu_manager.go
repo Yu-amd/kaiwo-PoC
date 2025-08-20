@@ -17,7 +17,6 @@ package manager
 import (
 	"context"
 	"fmt"
-	"strings"
 	"time"
 
 	"github.com/silogen/kaiwo/pkg/gpu/types"
@@ -28,6 +27,7 @@ type AMDGPUManager struct {
 	*BaseGPUManager
 	gpus       map[string]*types.GPUInfo
 	lastUpdate time.Time
+	discovery  *AMDGPUDiscovery
 }
 
 // NewAMDGPUManager creates a new AMD GPU manager
@@ -44,15 +44,18 @@ func NewAMDGPUManager(config *GPUManagerConfig) (*AMDGPUManager, error) {
 		BaseGPUManager: NewBaseGPUManager(config),
 		gpus:           make(map[string]*types.GPUInfo),
 		lastUpdate:     time.Now(),
+		discovery:      NewAMDGPUDiscovery(),
 	}, nil
 }
 
 // Initialize initializes the AMD GPU manager
 func (a *AMDGPUManager) Initialize(ctx context.Context) error {
 	// Discover AMD GPUs
-	a.discoverGPUs(ctx)
+	if err := a.discoverGPUs(ctx); err != nil {
+		return fmt.Errorf("failed to discover GPUs: %v", err)
+	}
 
-	// Start GPU monitoring
+	// Start GPU monitoring with real discovery
 	go a.monitorGPUs(ctx)
 
 	return nil
@@ -201,76 +204,40 @@ func (a *AMDGPUManager) UpdateGPUInfo(ctx context.Context, deviceID string) erro
 	return a.updateSingleGPUInfo(ctx, deviceID)
 }
 
-// discoverGPUs discovers AMD GPUs in the system
-func (a *AMDGPUManager) discoverGPUs(_ context.Context) {
-	// This is a simplified implementation
-	// In practice, you would use AMD ROCm tools or system calls to discover GPUs
-
-	// For now, we'll create some mock GPUs for testing
-	mockGPUs := []*types.GPUInfo{
-		{
-			DeviceID:          "card0",
-			Type:              types.GPUTypeAMD,
-			Model:             "AMD Instinct MI250X",
-			TotalMemory:       128 * 1024 * 1024 * 1024, // 128 GB
-			AvailableMemory:   128 * 1024 * 1024 * 1024,
-			Utilization:       0.0,
-			Temperature:       45.0,
-			Power:             0.0,
-			NodeName:          "node-1",
-			IsAvailable:       true,
-			IsolationType:     types.GPUIsolationNone,
-			ActiveAllocations: 0,
-		},
-		{
-			DeviceID:          "card1",
-			Type:              types.GPUTypeAMD,
-			Model:             "AMD Instinct MI250X",
-			TotalMemory:       128 * 1024 * 1024 * 1024, // 128 GB
-			AvailableMemory:   128 * 1024 * 1024 * 1024,
-			Utilization:       0.0,
-			Temperature:       45.0,
-			Power:             0.0,
-			NodeName:          "node-1",
-			IsAvailable:       true,
-			IsolationType:     types.GPUIsolationNone,
-			ActiveAllocations: 0,
-		},
+// discoverGPUs discovers AMD GPUs in the system using real GPU discovery
+func (a *AMDGPUManager) discoverGPUs(ctx context.Context) error {
+	// Use real AMD GPU discovery
+	discoveredGPUs, err := a.discovery.DiscoverGPUs(ctx)
+	if err != nil {
+		return fmt.Errorf("failed to discover AMD GPUs: %w", err)
 	}
 
-	for _, gpu := range mockGPUs {
+	// Store discovered GPUs
+	for _, gpu := range discoveredGPUs {
 		a.gpus[gpu.DeviceID] = gpu
 	}
+
+	fmt.Printf("Discovered %d AMD GPUs\n", len(discoveredGPUs))
+	return nil
 }
 
-// updateGPUInfo updates information for all GPUs
+// updateGPUInfo updates information for all GPUs using real discovery
 func (a *AMDGPUManager) updateGPUInfo(ctx context.Context) {
-	for deviceID := range a.gpus {
-		if err := a.updateSingleGPUInfo(ctx, deviceID); err != nil {
-			// Log error but continue with other GPUs
-			fmt.Printf("Error updating GPU %s: %v\n", deviceID, err)
-		}
-	}
-
+	// Use the discovery monitoring to update all GPU metrics
+	a.discovery.updateGPUMetrics(ctx, a.gpus)
 	a.lastUpdate = time.Now()
 }
 
-// updateSingleGPUInfo updates information for a single GPU
-func (a *AMDGPUManager) updateSingleGPUInfo(_ context.Context, deviceID string) error {
-	gpu, exists := a.gpus[deviceID]
+// updateSingleGPUInfo updates information for a single GPU using real discovery
+func (a *AMDGPUManager) updateSingleGPUInfo(ctx context.Context, deviceID string) error {
+	_, exists := a.gpus[deviceID]
 	if !exists {
 		return fmt.Errorf("GPU %s not found", deviceID)
 	}
 
-	// This is a simplified implementation
-	// In practice, you would use AMD ROCm tools or system calls to get GPU information
-
-	// Mock GPU information update
-	gpu.Utilization = a.getMockGPUUtilization(deviceID)
-	gpu.Temperature = a.getMockGPUTemperature(deviceID)
-	gpu.Power = a.getMockGPUPower(deviceID)
-	gpu.AvailableMemory = a.getMockGPUAvailableMemory(deviceID)
-	gpu.IsAvailable = a.isGPUAvailable(gpu)
+	// Use the discovery system to update metrics for this specific GPU
+	// For now, we update all GPUs as most discovery systems work globally
+	a.discovery.updateGPUMetrics(ctx, a.gpus)
 
 	return nil
 }
@@ -448,36 +415,4 @@ func (a *AMDGPUManager) monitorGPUs(ctx context.Context) {
 	}
 }
 
-// Mock functions for GPU information (replace with real implementations)
 
-func (a *AMDGPUManager) getMockGPUUtilization(deviceID string) float64 {
-	// Mock utilization based on device ID
-	if strings.Contains(deviceID, "card0") {
-		return 25.0
-	}
-	return 15.0
-}
-
-func (a *AMDGPUManager) getMockGPUTemperature(deviceID string) float64 {
-	// Mock temperature based on device ID
-	if strings.Contains(deviceID, "card0") {
-		return 65.0
-	}
-	return 55.0
-}
-
-func (a *AMDGPUManager) getMockGPUPower(deviceID string) float64 {
-	// Mock power consumption based on device ID
-	if strings.Contains(deviceID, "card0") {
-		return 150.0
-	}
-	return 120.0
-}
-
-func (a *AMDGPUManager) getMockGPUAvailableMemory(deviceID string) int64 {
-	// Mock available memory based on device ID
-	if strings.Contains(deviceID, "card0") {
-		return 100 * 1024 * 1024 * 1024 // 100 GB
-	}
-	return 110 * 1024 * 1024 * 1024 // 110 GB
-}
