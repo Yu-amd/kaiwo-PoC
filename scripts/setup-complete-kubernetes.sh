@@ -509,25 +509,25 @@ $(kubectl cluster-info 2>/dev/null || echo "Cluster info not available")
 Nodes:
 $(kubectl get nodes 2>/dev/null || echo "Nodes not available")
 
-GPU Resources:
-$(kubectl get nodes -o json | jq '.items[].status.allocatable | keys | .[] | select(contains("amd.com/gpu"))' 2>/dev/null || echo "No GPU resources detected")
+AMD GPU Resources:
+$(kubectl get nodes -o json | jq '.items[].status.allocatable | keys | .[] | select(contains("amd.com/gpu"))' 2>/dev/null || echo "No AMD GPU resources detected")
 
 Installed Components:
 - Vanilla Kubernetes (kubeadm)
 - Docker
 - kubectl
 - Helm
-- AMD GPU Operator
+- AMD GPU Device Plugin
 - Flannel CNI
 - k9s (Kubernetes CLI)
 - kubectx/kubens
-- kubectl tree plugin
 
 Next Steps for Kaiwo-PoC Development:
-1. Test GPU functionality: kubectl apply -f test/manifests/test-gpu-job.yaml
-2. Deploy Kaiwo-PoC: ./scripts/deploy-remote.sh
-3. Validate setup: ./scripts/validate-gpu.sh
-4. Start development: make build && make test
+1. Test AMD GPU functionality: kubectl apply -f test/manifests/test-amd-gpu-job.yaml
+2. Run comprehensive CI tests: ./scripts/run-comprehensive-tests.sh
+3. Validate AMD GPU setup: ./scripts/validate-gpu.sh
+4. Test GPU setup: ./scripts/test-gpu-setup.sh
+5. Start development: make build && make test
 
 Useful Commands:
 - View cluster: kubectl get nodes
@@ -535,7 +535,7 @@ Useful Commands:
 - Interactive cluster view: k9s
 - Switch contexts: kubectx
 - Switch namespaces: kubens
-- View resource tree: kubectl tree
+- Test AMD GPU: kubectl apply -f test/manifests/test-amd-gpu-job.yaml
 
 kubeconfig location: ~/.kube/config
 EOF
@@ -555,16 +555,21 @@ Cluster Management:
   kubectx                              # Switch contexts
   kubens                               # Switch namespaces
 
-GPU Management:
+AMD GPU Management:
   kubectl get nodes -o json | jq '.items[].status.allocatable | keys | .[] | select(contains("amd.com/gpu"))'
-  rocm-smi                             # AMD GPU status
-  kubectl get pods -n gpu-operator-resources
+  rocm-smi --showproductname           # AMD GPU status
+  kubectl get pods -n kube-system | grep amd-gpu-device-plugin
 
 Kaiwo-PoC Development:
   make build                           # Build Kaiwo-PoC
   make test                            # Run tests
-  ./scripts/deploy-remote.sh           # Deploy to cluster
-  ./scripts/validate-gpu.sh            # Test GPU functionality
+  ./scripts/run-comprehensive-tests.sh # Run CI tests
+  ./scripts/validate-gpu.sh            # Test AMD GPU functionality
+  ./scripts/test-gpu-setup.sh          # Test GPU setup
+
+AMD GPU Testing:
+  kubectl apply -f test/manifests/test-amd-gpu-job.yaml  # Test AMD GPU
+  kubectl logs job/amd-gpu-test                          # View GPU test results
 
 Troubleshooting:
   kubectl logs -f <pod-name>           # View pod logs
@@ -592,26 +597,29 @@ echo "  ✅ kubectx/kubens (context/namespace switching)"
 echo "  ⚠️  kubectl plugins (optional - can be installed manually)"
 
 echo
-print_status "Next steps:"
-echo "1. Test GPU functionality:"
-echo "   kubectl apply -f test/manifests/test-gpu-job.yaml"
+print_status "Next steps for Kaiwo-PoC development:"
+echo "1. Test AMD GPU functionality:"
+echo "   kubectl apply -f test/manifests/test-amd-gpu-job.yaml"
 echo
-echo "2. Deploy Kaiwo-PoC:"
-echo "   ./scripts/deploy-remote.sh"
+echo "2. Run comprehensive CI tests:"
+echo "   ./scripts/run-comprehensive-tests.sh"
 echo
-echo "3. Validate your setup:"
+echo "3. Validate AMD GPU setup:"
 echo "   ./scripts/validate-gpu.sh"
 echo
-echo "4. Start developing:"
+echo "4. Test GPU setup:"
+echo "   ./scripts/test-gpu-setup.sh"
+echo
+echo "5. Start Kaiwo-PoC development:"
 echo "   make build && make test"
 echo
-echo "5. View cluster interactively:"
+echo "6. View cluster interactively:"
 echo "   k9s"
 echo
-echo "6. Check setup summary:"
+echo "7. Check setup summary:"
 echo "   cat $SUMMARY_FILE"
 echo
-echo "7. Quick reference:"
+echo "8. Quick reference:"
 echo "   cat $REFERENCE_FILE"
 
 echo
