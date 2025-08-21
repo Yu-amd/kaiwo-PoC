@@ -359,7 +359,8 @@ func (wr *Reconciler) apply(ctx context.Context, clusterCtx ClusterContext, reco
 		wr.Recorder.Eventf(owner, corev1.EventTypeNormal, "ResourceCreated", "Created %s: %s", desired.GetObjectKind().GroupVersionKind().String(), desired.GetName())
 		logger.Info(fmt.Sprintf("Created object '%s'", objectKey), "name", desired.GetName(), "namespace", desired.GetNamespace(), "gvk", desired.GetObjectKind().GroupVersionKind().String())
 	case controllerutil.OperationResultUpdated:
-		wr.Recorder.Eventf(owner, corev1.EventTypeNormal, "ResourceUpdated", "Updated %s: %s", desired.GetObjectKind().GroupVersionKind().String(), desired.GetName())
+		gvk := desired.GetObjectKind().GroupVersionKind().String()
+		wr.Recorder.Eventf(owner, corev1.EventTypeNormal, "ResourceUpdated", "Updated %s: %s", gvk, desired.GetName())
 		logger.Info(fmt.Sprintf("Updated object '%s'", objectKey), desired.GetName(), "namespace", desired.GetNamespace(), "gvk", desired.GetObjectKind().GroupVersionKind().String())
 	}
 

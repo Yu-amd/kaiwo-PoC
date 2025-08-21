@@ -20,6 +20,12 @@ const (
 	ReservationStatusExpired   ReservationStatus = "expired"
 )
 
+const (
+	ConflictResolutionPolicyStrict   = "strict"
+	ConflictResolutionPolicyFlexible = "flexible"
+	ConflictResolutionPolicyOverlap  = "overlap"
+)
+
 // ReservationPriority represents the priority of a reservation
 type ReservationPriority int
 
@@ -32,21 +38,21 @@ const (
 
 // GPUReservation represents a GPU reservation
 type GPUReservation struct {
-	ID              string
-	UserID          string
-	WorkloadID      string
-	GPUID           string
-	Fraction        float64
-	MemoryRequest   int64 // in MiB
-	StartTime       time.Time
-	EndTime         time.Time
-	Priority        ReservationPriority
-	Status          ReservationStatus
-	CreatedAt       time.Time
-	UpdatedAt       time.Time
-	Annotations     map[string]string
-	IsolationType   string // "time-slicing", "none"
-	SharingEnabled  bool
+	ID             string
+	UserID         string
+	WorkloadID     string
+	GPUID          string
+	Fraction       float64
+	MemoryRequest  int64 // in MiB
+	StartTime      time.Time
+	EndTime        time.Time
+	Priority       ReservationPriority
+	Status         ReservationStatus
+	CreatedAt      time.Time
+	UpdatedAt      time.Time
+	Annotations    map[string]string
+	IsolationType  string // "time-slicing", "none"
+	SharingEnabled bool
 }
 
 // ReservationRequest represents a request to create a GPU reservation
@@ -66,9 +72,9 @@ type ReservationRequest struct {
 
 // ReservationConflict represents a conflict between reservations
 type ReservationConflict struct {
-	ReservationID string
-	ConflictType  string
-	Message       string
+	ReservationID           string
+	ConflictType            string
+	Message                 string
 	ConflictingReservations []string
 }
 
@@ -102,7 +108,7 @@ func NewGPUReservationManager(config ReservationManagerConfig) *GPUReservationMa
 		config.DefaultReservationWindow = 24 * time.Hour
 	}
 	if config.ConflictResolutionPolicy == "" {
-		config.ConflictResolutionPolicy = "strict"
+		config.ConflictResolutionPolicy = ConflictResolutionPolicyStrict
 	}
 	if config.MaxReservationDuration == 0 {
 		config.MaxReservationDuration = 7 * 24 * time.Hour // 1 week
@@ -402,9 +408,9 @@ func (r *GPUReservationManager) checkConflicts(request *ReservationRequest) []*R
 			// Check if they use the same GPU
 			if request.GPUID == reservation.GPUID {
 				conflict := &ReservationConflict{
-					ReservationID: reservation.ID,
-					ConflictType:  "time_overlap",
-					Message:       fmt.Sprintf("Time overlap with reservation %s", reservation.ID),
+					ReservationID:           reservation.ID,
+					ConflictType:            "time_overlap",
+					Message:                 fmt.Sprintf("Time overlap with reservation %s", reservation.ID),
 					ConflictingReservations: []string{reservation.ID},
 				}
 				conflicts = append(conflicts, conflict)
@@ -451,8 +457,8 @@ func (r *GPUReservationManager) resolveConflicts(newReservation *GPUReservation,
 func (r *GPUReservationManager) checkUserLimits(userID string) error {
 	count := 0
 	for _, reservation := range r.reservations {
-		if reservation.UserID == userID && 
-		   (reservation.Status == ReservationStatusPending || reservation.Status == ReservationStatusActive) {
+		if reservation.UserID == userID &&
+			(reservation.Status == ReservationStatusPending || reservation.Status == ReservationStatusActive) {
 			count++
 		}
 	}
@@ -468,8 +474,8 @@ func (r *GPUReservationManager) checkUserLimits(userID string) error {
 func (r *GPUReservationManager) checkGPULimits(gpuID string) error {
 	count := 0
 	for _, reservation := range r.reservations {
-		if reservation.GPUID == gpuID && 
-		   (reservation.Status == ReservationStatusPending || reservation.Status == ReservationStatusActive) {
+		if reservation.GPUID == gpuID &&
+			(reservation.Status == ReservationStatusPending || reservation.Status == ReservationStatusActive) {
 			count++
 		}
 	}
@@ -491,19 +497,16 @@ func (r *GPUReservationManager) cleanupExpiredReservations() {
 	ticker := time.NewTicker(r.config.CleanupInterval)
 	defer ticker.Stop()
 
-	for {
-		select {
-		case <-ticker.C:
-			r.mu.Lock()
-			now := time.Now()
-					for _, reservation := range r.reservations {
+	for range ticker.C {
+		r.mu.Lock()
+		now := time.Now()
+		for _, reservation := range r.reservations {
 			if reservation.EndTime.Before(now) && reservation.Status == ReservationStatusActive {
 				reservation.Status = ReservationStatusExpired
 				reservation.UpdatedAt = now
 			}
 		}
-			r.mu.Unlock()
-		}
+		r.mu.Unlock()
 	}
 }
 

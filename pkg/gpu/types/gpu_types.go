@@ -36,9 +36,9 @@ const (
 type GPUIsolationType string
 
 const (
-	GPUIsolationTimeSlicing GPUIsolationType = "time-slicing"  // Time-slicing for AMD GPUs
-	GPUIsolationMIG  GPUIsolationType = "mig"  // Multi-Instance GPU (NVIDIA)
-	GPUIsolationNone GPUIsolationType = "none" // No isolation
+	GPUIsolationTimeSlicing GPUIsolationType = "time-slicing" // Time-slicing for AMD GPUs
+	GPUIsolationMIG         GPUIsolationType = "mig"          // Multi-Instance GPU (NVIDIA)
+	GPUIsolationNone        GPUIsolationType = "none"         // No isolation
 )
 
 // GPUInfo represents information about a GPU device
@@ -351,17 +351,15 @@ type GPUStats struct {
 	ActiveAllocations int `json:"activeAllocations"`
 }
 
-
-
 // ReservationStats contains statistics about GPU reservations
 type ReservationStats struct {
-	TotalReservations     int               `json:"total_reservations"`
-	PendingReservations   int               `json:"pending_reservations"`
-	ActiveReservations    int               `json:"active_reservations"`
-	CompletedReservations int               `json:"completed_reservations"`
-	CancelledReservations int               `json:"cancelled_reservations"`
-	ExpiredReservations   int               `json:"expired_reservations"`
-	ReservationsByGPU     map[string]int    `json:"reservations_by_gpu"`
-	ReservationsByUser    map[string]int    `json:"reservations_by_user"`
-	ReservationsByStatus  map[string]int    `json:"reservations_by_status"`
+	TotalReservations     int            `json:"total_reservations"`
+	PendingReservations   int            `json:"pending_reservations"`
+	ActiveReservations    int            `json:"active_reservations"`
+	CompletedReservations int            `json:"completed_reservations"`
+	CancelledReservations int            `json:"cancelled_reservations"`
+	ExpiredReservations   int            `json:"expired_reservations"`
+	ReservationsByGPU     map[string]int `json:"reservations_by_gpu"`
+	ReservationsByUser    map[string]int `json:"reservations_by_user"`
+	ReservationsByStatus  map[string]int `json:"reservations_by_status"`
 }

@@ -75,12 +75,12 @@ func (a *AMDGPUSharing) CanAllocate(deviceID string, request *types.GPURequest) 
 	// Check memory availability (this is the main constraint for AMD GPUs)
 	requestedMemory := request.MemoryRequest * 1024 * 1024 // Convert MiB to bytes
 	usedMemory := a.gpuMemoryUsage[deviceID]
-	
+
 	// Get GPU info to check total memory
 	// This would need to be passed in or retrieved from the GPU manager
 	// For now, we'll use a conservative estimate
 	totalMemory := int64(8 * 1024 * 1024 * 1024) // 8GB default
-	
+
 	availableMemory := totalMemory - usedMemory
 	if requestedMemory > availableMemory {
 		return false, fmt.Errorf("insufficient memory: requested %d bytes, available %d bytes",
@@ -110,7 +110,7 @@ func (a *AMDGPUSharing) Allocate(deviceID string, request *types.AllocationReque
 	allocation := &types.GPUAllocation{
 		ID:            request.ID,
 		DeviceID:      deviceID,
-		Fraction:      request.GPURequest.Fraction, // Used for scheduling priority
+		Fraction:      request.GPURequest.Fraction,                    // Used for scheduling priority
 		MemoryRequest: request.GPURequest.MemoryRequest * 1024 * 1024, // Convert to bytes
 		IsolationType: request.GPURequest.IsolationType,
 		PodName:       request.PodName,
@@ -131,8 +131,8 @@ func (a *AMDGPUSharing) Allocate(deviceID string, request *types.AllocationReque
 	// Initialize scheduler if needed
 	if a.gpuScheduling[deviceID] == nil {
 		a.gpuScheduling[deviceID] = &GPUScheduler{
-			timeSlice:   30 * time.Second, // 30-second time slices
-			lastSwitch:  time.Now(),
+			timeSlice:  30 * time.Second, // 30-second time slices
+			lastSwitch: time.Now(),
 		}
 	}
 
@@ -153,10 +153,10 @@ func (a *AMDGPUSharing) Release(deviceID, allocationID string) error {
 		if workload.ID == allocationID {
 			// Update memory usage
 			a.gpuMemoryUsage[deviceID] -= workload.MemoryRequest
-			
+
 			// Remove from workloads
 			a.gpuWorkloads[deviceID] = append(workloads[:i], workloads[i+1:]...)
-			
+
 			// Remove from scheduler queue
 			if scheduler := a.gpuScheduling[deviceID]; scheduler != nil {
 				for j, queued := range scheduler.workloadQueue {
@@ -165,13 +165,13 @@ func (a *AMDGPUSharing) Release(deviceID, allocationID string) error {
 						break
 					}
 				}
-				
+
 				// If this was the active workload, clear it
 				if scheduler.activeWorkload != nil && scheduler.activeWorkload.ID == allocationID {
 					scheduler.activeWorkload = nil
 				}
 			}
-			
+
 			return nil
 		}
 	}
@@ -203,14 +203,14 @@ func (a *AMDGPUSharing) GetMemoryUsage(deviceID string) int64 {
 func (a *AMDGPUSharing) GetSchedulerInfo(deviceID string) *GPUScheduler {
 	a.mu.RLock()
 	defer a.mu.RUnlock()
-	
+
 	if scheduler, exists := a.gpuScheduling[deviceID]; exists {
 		// Return a copy to avoid race conditions
 		return &GPUScheduler{
-			timeSlice:       scheduler.timeSlice,
-			workloadQueue:   append([]*types.GPUAllocation{}, scheduler.workloadQueue...),
-			activeWorkload:  scheduler.activeWorkload,
-			lastSwitch:      scheduler.lastSwitch,
+			timeSlice:      scheduler.timeSlice,
+			workloadQueue:  append([]*types.GPUAllocation{}, scheduler.workloadQueue...),
+			activeWorkload: scheduler.activeWorkload,
+			lastSwitch:     scheduler.lastSwitch,
 		}
 	}
 	return nil
@@ -235,12 +235,12 @@ func (a *AMDGPUSharing) UpdateScheduling(deviceID string) {
 			if scheduler.activeWorkload != nil {
 				scheduler.workloadQueue = append(scheduler.workloadQueue, scheduler.activeWorkload)
 			}
-			
+
 			// Set next workload as active
 			scheduler.activeWorkload = scheduler.workloadQueue[0]
 			scheduler.workloadQueue = scheduler.workloadQueue[1:]
 			scheduler.lastSwitch = time.Now()
-			
+
 			// Update allocation status
 			if scheduler.activeWorkload != nil {
 				scheduler.activeWorkload.Status = types.GPUAllocationStatusActive

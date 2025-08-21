@@ -336,12 +336,7 @@ func (d *AMDGPUDiscovery) readSysfsFile(path string) string {
 // isGPUHealthy determines if a GPU is healthy based on temperature and utilization
 func (d *AMDGPUDiscovery) isGPUHealthy(temperature, utilization float64) bool {
 	// Check temperature threshold (< 90°C)
-	if temperature > 90.0 {
-		return false
-	}
-
-	// GPU is available if it exists and isn't overheating
-	return true
+	return temperature <= 90.0
 }
 
 // findROCmSMI finds the rocm-smi executable
@@ -375,15 +370,6 @@ func parseFloat(s string) (float64, error) {
 		return 0, nil
 	}
 	return strconv.ParseFloat(s, 64)
-}
-
-// parseInt64 safely parses an int64 from string
-func parseInt64(s string) (int64, error) {
-	s = strings.TrimSpace(s)
-	if s == "" || s == "N/A" {
-		return 0, nil
-	}
-	return strconv.ParseInt(s, 10, 64)
 }
 
 // getStringValue safely extracts a string value from a map

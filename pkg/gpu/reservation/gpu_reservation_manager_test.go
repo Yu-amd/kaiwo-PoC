@@ -389,10 +389,7 @@ func TestUpdateReservation(t *testing.T) {
 	}
 }
 
-func TestCancelReservation(t *testing.T) {
-	manager := NewGPUReservationManager(ReservationManagerConfig{})
-
-	// Create a reservation
+func createTestReservation(t *testing.T, manager *GPUReservationManager) *GPUReservation {
 	request := &ReservationRequest{
 		UserID:     "user1",
 		WorkloadID: "workload1",
@@ -406,9 +403,16 @@ func TestCancelReservation(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Failed to create reservation: %v", err)
 	}
+	return reservation
+}
+
+func TestCancelReservation(t *testing.T) {
+	manager := NewGPUReservationManager(ReservationManagerConfig{})
+
+	reservation := createTestReservation(t, manager)
 
 	// Cancel the reservation
-	err = manager.CancelReservation(reservation.ID)
+	err := manager.CancelReservation(reservation.ID)
 	if err != nil {
 		t.Fatalf("Failed to cancel reservation: %v", err)
 	}
@@ -433,23 +437,10 @@ func TestCancelReservation(t *testing.T) {
 func TestCompleteReservation(t *testing.T) {
 	manager := NewGPUReservationManager(ReservationManagerConfig{})
 
-	// Create a reservation
-	request := &ReservationRequest{
-		UserID:     "user1",
-		WorkloadID: "workload1",
-		GPUID:      "card0",
-		Fraction:   0.5,
-		StartTime:  time.Now().Add(1 * time.Hour),
-		Duration:   1 * time.Hour,
-	}
-
-	reservation, err := manager.CreateReservation(context.Background(), request)
-	if err != nil {
-		t.Fatalf("Failed to create reservation: %v", err)
-	}
+	reservation := createTestReservation(t, manager)
 
 	// Complete the reservation
-	err = manager.CompleteReservation(reservation.ID)
+	err := manager.CompleteReservation(reservation.ID)
 	if err != nil {
 		t.Fatalf("Failed to complete reservation: %v", err)
 	}

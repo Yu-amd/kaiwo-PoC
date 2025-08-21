@@ -161,7 +161,10 @@ func TestGetValidFractions(t *testing.T) {
 		MemoryMode:  MI300XMemoryModeNPS1,
 		XCDCount:    8,
 	}
-	allocator.RegisterMI300XGPU("card0", 8*1024*1024*1024, spxConfig)
+	err := allocator.RegisterMI300XGPU("card0", 8*1024*1024*1024, spxConfig)
+	if err != nil {
+		t.Fatalf("Failed to register GPU: %v", err)
+	}
 
 	spxFractions := allocator.GetValidFractions("card0")
 	expectedSPX := []float64{1.0}
@@ -178,7 +181,10 @@ func TestGetValidFractions(t *testing.T) {
 		MemoryMode:  MI300XMemoryModeNPS4,
 		XCDCount:    8,
 	}
-	allocator.RegisterMI300XGPU("card1", 8*1024*1024*1024, cpxConfig)
+	err = allocator.RegisterMI300XGPU("card1", 8*1024*1024*1024, cpxConfig)
+	if err != nil {
+		t.Fatalf("Failed to register GPU: %v", err)
+	}
 
 	cpxFractions := allocator.GetValidFractions("card1")
 	expectedCPX := []float64{0.125, 0.25, 0.375, 0.5, 0.625, 0.75, 0.875, 1.0}
@@ -191,7 +197,6 @@ func TestGetValidFractions(t *testing.T) {
 		}
 	}
 
-
 }
 
 func TestValidateFraction(t *testing.T) {
@@ -203,10 +208,13 @@ func TestValidateFraction(t *testing.T) {
 		MemoryMode:  MI300XMemoryModeNPS1,
 		XCDCount:    8,
 	}
-	allocator.RegisterMI300XGPU("card0", 8*1024*1024*1024, spxConfig)
+	err := allocator.RegisterMI300XGPU("card0", 8*1024*1024*1024, spxConfig)
+	if err != nil {
+		t.Fatalf("Failed to register GPU: %v", err)
+	}
 
 	// Test valid SPX fraction
-	err := allocator.ValidateFraction("card0", 1.0)
+	err = allocator.ValidateFraction("card0", 1.0)
 	if err != nil {
 		t.Errorf("Expected valid fraction 1.0, got error: %v", err)
 	}
@@ -223,7 +231,10 @@ func TestValidateFraction(t *testing.T) {
 		MemoryMode:  MI300XMemoryModeNPS4,
 		XCDCount:    8,
 	}
-	allocator.RegisterMI300XGPU("card1", 8*1024*1024*1024, cpxConfig)
+	err = allocator.RegisterMI300XGPU("card1", 8*1024*1024*1024, cpxConfig)
+	if err != nil {
+		t.Fatalf("Failed to register GPU: %v", err)
+	}
 
 	// Test valid CPX fractions
 	validCPXFractions := []float64{0.125, 0.25, 0.375, 0.5, 0.625, 0.75, 0.875, 1.0}
@@ -249,7 +260,10 @@ func TestCanAllocateSPX(t *testing.T) {
 		MemoryMode:  MI300XMemoryModeNPS1,
 		XCDCount:    8,
 	}
-	allocator.RegisterMI300XGPU("card0", 8*1024*1024*1024, spxConfig) // 8GB
+	err := allocator.RegisterMI300XGPU("card0", 8*1024*1024*1024, spxConfig) // 8GB
+	if err != nil {
+		t.Fatalf("Failed to register GPU: %v", err)
+	}
 
 	// Test valid SPX allocation
 	request := &types.GPURequest{
@@ -273,7 +287,7 @@ func TestCanAllocateSPX(t *testing.T) {
 		Priority:      5,
 	}
 
-	canAllocate, err = allocator.CanAllocate("card0", invalidRequest)
+	_, err = allocator.CanAllocate("card0", invalidRequest)
 	if err == nil {
 		t.Error("Expected error for invalid fraction in SPX mode")
 	}
@@ -306,7 +320,7 @@ func TestCanAllocateCPX(t *testing.T) {
 
 	// Test allocation requiring multiple XCDs
 	multiXCDRequest := &types.GPURequest{
-		Fraction:      0.5, // 4 XCDs
+		Fraction:      0.5,  // 4 XCDs
 		MemoryRequest: 4096, // 4GB
 		Priority:      5,
 	}
@@ -321,7 +335,7 @@ func TestCanAllocateCPX(t *testing.T) {
 
 	// Test allocation exceeding available XCDs
 	largeRequest := &types.GPURequest{
-		Fraction:      1.0, // 8 XCDs
+		Fraction:      1.0,  // 8 XCDs
 		MemoryRequest: 8192, // 8GB
 		Priority:      5,
 	}
@@ -503,7 +517,7 @@ func TestGetGPUUtilization(t *testing.T) {
 	request := &types.AllocationRequest{
 		ID: "test-allocation",
 		GPURequest: &types.GPURequest{
-			Fraction:      0.5, // 4 XCDs
+			Fraction:      0.5,  // 4 XCDs
 			MemoryRequest: 4096, // 4GB
 			Priority:      5,
 		},

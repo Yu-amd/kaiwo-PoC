@@ -43,7 +43,7 @@ func TestAMDGPUSharing(t *testing.T) {
 		Namespace:     "default",
 		ContainerName: "test-container",
 		GPURequest: &types.GPURequest{
-			Fraction:       0.5, // Used for scheduling priority, not hardware partitioning
+			Fraction:       0.5,  // Used for scheduling priority, not hardware partitioning
 			MemoryRequest:  2048, // 2GB
 			IsolationType:  types.GPUIsolationTimeSlicing,
 			SharingEnabled: true,
@@ -94,7 +94,7 @@ func TestAMDGPUSharing(t *testing.T) {
 	// Test time-slicing update
 	// Initially, no workload should be active (time slice hasn't elapsed)
 	sharing.UpdateScheduling("card0")
-	
+
 	// Check that the workload is in the queue but not yet active
 	updatedScheduler := sharing.GetSchedulerInfo("card0")
 	if updatedScheduler == nil {
@@ -246,7 +246,7 @@ func TestAMDGPUSharingCapabilities(t *testing.T) {
 		"hardware_partitioning": "advanced_on_mi300x",
 		"time_slicing":          true,
 		"memory_management":     true,
-		"time_slicing_support":           true,
+		"time_slicing_support":  true,
 		"fractional_allocation": "hardware_on_mi300x",
 		"isolation":             "srivov_on_mi300x",
 	}

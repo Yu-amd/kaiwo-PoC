@@ -414,5 +414,3 @@ func (a *AMDGPUManager) monitorGPUs(ctx context.Context) {
 		}
 	}
 }
-
-

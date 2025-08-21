@@ -145,14 +145,14 @@ func (f *MI300XFractionalAllocator) GetValidFractions(deviceID string) []float64
 // ValidateFraction validates if a fraction is valid for the given GPU
 func (f *MI300XFractionalAllocator) ValidateFraction(deviceID string, fraction float64) error {
 	validFractions := f.GetValidFractions(deviceID)
-	
+
 	for _, valid := range validFractions {
 		if math.Abs(fraction-valid) < 0.001 { // Allow small floating point differences
 			return nil
 		}
 	}
 
-	return fmt.Errorf("fraction %f is not valid for GPU %s. Valid fractions: %v", 
+	return fmt.Errorf("fraction %f is not valid for GPU %s. Valid fractions: %v",
 		fraction, deviceID, validFractions)
 }
 
@@ -220,7 +220,7 @@ func (f *MI300XFractionalAllocator) canAllocateSPX(deviceID string, request *typ
 func (f *MI300XFractionalAllocator) canAllocateCPX(deviceID string, request *types.GPURequest) (bool, error) {
 	// Calculate how many XCDs are needed
 	xcdsNeeded := int(math.Ceil(request.Fraction * 8.0))
-	
+
 	// Check if enough XCDs are available
 	availableXCDs := f.getAvailableXCDs(deviceID)
 	if xcdsNeeded > availableXCDs {
@@ -239,8 +239,6 @@ func (f *MI300XFractionalAllocator) canAllocateCPX(deviceID string, request *typ
 
 	return true, nil
 }
-
-
 
 // Allocate performs a fractional allocation for MI300X
 func (f *MI300XFractionalAllocator) Allocate(deviceID string, request *types.AllocationRequest) (*types.GPUAllocation, error) {
@@ -340,34 +338,6 @@ func (f *MI300XFractionalAllocator) releaseXCDs(deviceID string, allocation *typ
 		if f.xcdAllocations[deviceID][xcdIndex].ID == allocation.ID {
 			delete(f.xcdAllocations[deviceID], xcdIndex)
 		}
-	}
-}
-
-// GetAvailableFraction returns the available fractional capacity for a GPU
-func (f *MI300XFractionalAllocator) getAvailableFraction(deviceID string) float64 {
-	config := f.partitionConfig[deviceID]
-	if config == nil {
-		return 0.0
-	}
-
-	switch config.ComputeMode {
-	case MI300XPartitionModeSPX:
-		// SPX mode: Either full GPU (1.0) or nothing (0.0)
-		allocations := f.allocations[deviceID]
-		for _, allocation := range allocations {
-			if allocation.Status == types.GPUAllocationStatusActive {
-				return 0.0 // GPU is allocated
-			}
-		}
-		return 1.0 // GPU is available
-
-	case MI300XPartitionModeCPX:
-		// CPX mode: Available XCDs / 8
-		availableXCDs := f.getAvailableXCDs(deviceID)
-		return float64(availableXCDs) / 8.0
-
-	default:
-		return 0.0
 	}
 }
 
@@ -471,7 +441,7 @@ func (f *MI300XFractionalAllocator) CleanupExpiredAllocations() {
 			if allocation.ExpiresAt > 0 && allocation.ExpiresAt <= now {
 				// Mark as expired
 				allocation.Status = types.GPUAllocationStatusExpired
-				
+
 				// Release XCDs for CPX mode
 				config := f.partitionConfig[deviceID]
 				if config != nil && config.ComputeMode == MI300XPartitionModeCPX {
