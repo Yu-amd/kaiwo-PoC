@@ -41,12 +41,14 @@ kubectl get nodes
 kubectl get pods --all-namespaces
 
 # Test 3: Check for AMD GPU resources
-print_status "Test 3: Checking for AMD GPU resources..."
+print_status "Test 3: Checking for AMD Instinct GPU resources..."
 if kubectl get nodes -o json | jq -r '.items[].status.allocatable | keys | .[] | select(contains("amd.com/gpu"))' 2>/dev/null | grep -q .; then
-    print_success "AMD GPU resources detected in Kubernetes"
+    print_success "AMD Instinct GPU resources detected in Kubernetes"
     kubectl get nodes -o json | jq '.items[].status.allocatable | keys | .[] | select(contains("amd.com/gpu"))'
+    print_status "AMD GPU resources available:"
+    kubectl get nodes -o json | jq '.items[0].status.allocatable."amd.com/gpu"'
 else
-    print_warning "No AMD GPU resources detected in Kubernetes"
+    print_warning "No AMD Instinct GPU resources detected in Kubernetes"
 fi
 
 # Test 4: Check for AMD GPU labels
@@ -59,12 +61,12 @@ else
 fi
 
 # Test 5: Check if rocm-smi is available
-print_status "Test 5: Checking ROCm SMI availability..."
+print_status "Test 5: Checking AMD ROCm SMI availability..."
 if command -v rocm-smi &> /dev/null; then
-    print_success "ROCm SMI is available"
-    rocm-smi --list-gpus
+    print_success "AMD ROCm SMI is available"
+    rocm-smi --showproductname
 else
-    print_warning "ROCm SMI is not available"
+    print_warning "AMD ROCm SMI is not available"
 fi
 
 # Test 6: Create a simple test pod
@@ -109,8 +111,8 @@ echo
 print_status "Summary:"
 echo "- kubectl: Working"
 echo "- Cluster: Running"
-echo "- AMD GPU Resources: $(if kubectl get nodes -o json | jq -r '.items[].status.allocatable | keys | .[] | select(contains("amd.com/gpu"))' 2>/dev/null | grep -q .; then echo "Detected"; else echo "Not detected"; fi)"
+echo "- AMD Instinct GPU Resources: $(if kubectl get nodes -o json | jq -r '.items[].status.allocatable | keys | .[] | select(contains("amd.com/gpu"))' 2>/dev/null | grep -q .; then echo "Detected"; else echo "Not detected"; fi)"
 echo "- AMD GPU Labels: $(if kubectl get nodes -o json | jq -r '.items[].metadata.labels | keys | .[] | select(contains("amd.com/gpu"))' 2>/dev/null | grep -q .; then echo "Detected"; else echo "Not detected"; fi)"
-echo "- ROCm SMI: $(if command -v rocm-smi &> /dev/null; then echo "Available"; else echo "Not available"; fi)"
+echo "- AMD ROCm SMI: $(if command -v rocm-smi &> /dev/null; then echo "Available"; else echo "Not available"; fi)"
 echo "- Test Pod: Working"
 echo "- AMD GPU Device Plugin: $(if kubectl get pods -n kube-system | grep -q "amd-gpu-device-plugin"; then echo "Running"; else echo "Not running"; fi)"

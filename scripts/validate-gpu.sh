@@ -12,14 +12,16 @@ fi
 echo "📊 Checking cluster nodes..."
 kubectl get nodes
 
-echo "🎯 Checking GPU detection..."
+echo "🎯 Checking AMD GPU detection..."
 GPU_COUNT=$(kubectl get nodes -o json | jq -r '.items[].status.allocatable | keys | .[] | select(contains("amd.com/gpu"))' | wc -l)
 
 if [ "$GPU_COUNT" -gt 0 ]; then
-    echo "✅ AMD GPUs detected!"
+    echo "✅ AMD Instinct GPUs detected!"
     kubectl get nodes -o json | jq '.items[].status.allocatable | keys | .[] | select(contains("amd.com/gpu"))'
+    echo "AMD GPU resources available:"
+    kubectl get nodes -o json | jq '.items[0].status.allocatable."amd.com/gpu"'
 else
-    echo "❌ No AMD GPUs detected. Please check AMD GPU Operator installation."
+    echo "❌ No AMD Instinct GPUs detected. Please check AMD GPU device plugin installation."
     exit 1
 fi
 
@@ -34,29 +36,29 @@ else
     exit 1
 fi
 
-echo "📋 Monitoring test workload..."
+echo "📋 Monitoring AMD GPU test workload..."
 # Wait for the job to be ready
-echo "⏳ Waiting for job to be ready..."
+echo "⏳ Waiting for AMD GPU test job to be ready..."
 for i in {1..30}; do
     if kubectl get job amd-gpu-test | grep -q "1/1"; then
-        echo "✅ Job is ready!"
+        echo "✅ AMD GPU test job is ready!"
         break
     fi
-    echo "Waiting for job to be ready... (attempt $i/30)"
+    echo "Waiting for AMD GPU test job to be ready... (attempt $i/30)"
     kubectl get job amd-gpu-test
     sleep 5
 done
 
 # Check job status
-echo "📊 Job status:"
+echo "📊 AMD GPU test job status:"
 kubectl get job amd-gpu-test
 kubectl get pods | grep amd-gpu-test
 
 # Get the logs
-echo "📋 Job logs:"
+echo "📋 AMD GPU test job logs:"
 kubectl logs job/amd-gpu-test --tail=50
 
-echo "🧹 Cleaning up test workload..."
-kubectl delete -f test/manifests/test-gpu-job.yaml
+echo "🧹 Cleaning up AMD GPU test workload..."
+kubectl delete -f test/manifests/test-amd-gpu-job.yaml
 
 echo "✅ GPU validation complete!"
