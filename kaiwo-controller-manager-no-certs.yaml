@@ -1,0 +1,68 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: kaiwo-controller-manager
+  namespace: kaiwo-system
+  labels:
+    app.kubernetes.io/name: kaiwo
+    control-plane: kaiwo-controller-manager
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: kaiwo
+      control-plane: kaiwo-controller-manager
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: kaiwo
+        control-plane: kaiwo-controller-manager
+    spec:
+      containers:
+      - name: manager
+        command:
+        - /manager
+        args:
+        - --health-probe-bind-address=:8081
+        - --leader-elect
+        env:
+        - name: DEFAULT_KAIWO_QUEUE_CONFIG_NAME
+          value: kaiwo
+        - name: DEFAULT_CLUSTER_QUEUE_NAME
+          value: kaiwo
+        - name: RESOURCE_MONITORING_ENABLED
+          value: "false"
+        - name: RESOURCE_MONITORING_POLLING_INTERVAL
+          value: 15s
+        - name: RESOURCE_MONITORING_PROMETHEUS_ENDPOINT
+          value: http://prometheus-k8s.monitoring.svc.cluster.local:9090
+        image: ghcr.io/silogen/kaiwo-operator:test
+        livenessProbe:
+          httpGet:
+            path: /healthz
+            port: 8081
+          initialDelaySeconds: 15
+          periodSeconds: 20
+        readinessProbe:
+          httpGet:
+            path: /readyz
+            port: 8081
+          initialDelaySeconds: 5
+          periodSeconds: 10
+        resources:
+          limits:
+            memory: 4Gi
+          requests:
+            cpu: 500m
+            memory: 1Gi
+        securityContext:
+          allowPrivilegeEscalation: false
+          capabilities:
+            drop:
+            - ALL
+      securityContext:
+        runAsNonRoot: true
+        seccompProfile:
+          type: RuntimeDefault
+      serviceAccountName: kaiwo-controller-manager
+      terminationGracePeriodSeconds: 10
