@@ -217,21 +217,53 @@ containerd config default | sudo tee /etc/containerd/config.toml
 sudo sed -i 's/SystemdCgroup = false/SystemdCgroup = true/' /etc/containerd/config.toml
 sudo systemctl restart containerd
 
+# Configure bridge networking for Kubernetes
+print_status "Configuring bridge networking..."
+# Load bridge module
+sudo modprobe br_netfilter
+
+# Enable bridge-nf-call-iptables
+echo '1' | sudo tee /proc/sys/net/bridge/bridge-nf-call-iptables
+
+# Make changes permanent
+echo 'br_netfilter' | sudo tee -a /etc/modules-load.d/k8s.conf
+echo 'net.bridge.bridge-nf-call-iptables = 1' | sudo tee -a /etc/sysctl.d/k8s.conf
+echo 'net.bridge.bridge-nf-call-ip6tables = 1' | sudo tee -a /etc/sysctl.d/k8s.conf
+sudo sysctl --system
+
+print_success "Bridge networking configured"
+
 # Initialize Kubernetes cluster
 print_step "Initializing Kubernetes cluster..."
 if [ ! -f /etc/kubernetes/admin.conf ]; then
     # Get the primary IP address
     PRIMARY_IP=$(ip route get 1 | awk '{print $7; exit}')
     
-    # Initialize the cluster
-    sudo kubeadm init --pod-network-cidr=10.244.0.0/16 --apiserver-advertise-address=$PRIMARY_IP
-    
-    # Set up kubectl for the current user
-    mkdir -p ~/.kube
-    sudo cp /etc/kubernetes/admin.conf ~/.kube/config
-    sudo chown $USER:$USER ~/.kube/config
-    
-    print_success "Kubernetes cluster initialized"
+    # Initialize the cluster with error handling
+    if sudo kubeadm init --pod-network-cidr=10.244.0.0/16 --apiserver-advertise-address=$PRIMARY_IP; then
+        # Set up kubectl for the current user
+        mkdir -p ~/.kube
+        sudo cp /etc/kubernetes/admin.conf ~/.kube/config
+        sudo chown $USER:$USER ~/.kube/config
+        
+        print_success "Kubernetes cluster initialized"
+    else
+        print_error "Failed to initialize Kubernetes cluster"
+        print_status "Attempting to reset and retry..."
+        sudo kubeadm reset --force
+        sleep 10
+        
+        # Retry initialization
+        if sudo kubeadm init --pod-network-cidr=10.244.0.0/16 --apiserver-advertise-address=$PRIMARY_IP; then
+            mkdir -p ~/.kube
+            sudo cp /etc/kubernetes/admin.conf ~/.kube/config
+            sudo chown $USER:$USER ~/.kube/config
+            print_success "Kubernetes cluster initialized on retry"
+        else
+            print_error "Failed to initialize Kubernetes cluster after retry"
+            exit 1
+        fi
+    fi
 else
     print_success "Kubernetes cluster already initialized"
     
@@ -245,12 +277,20 @@ fi
 
 # Wait for Kubernetes to be ready
 print_status "Waiting for Kubernetes to be ready..."
-sleep 60
+for i in {1..30}; do
+    if kubectl get nodes &>/dev/null; then
+        print_success "Kubernetes cluster is responding"
+        break
+    fi
+    print_status "Waiting for Kubernetes to be ready... (attempt $i/30)"
+    sleep 10
+done
 
 # Verify Kubernetes installation
 print_step "Verifying Kubernetes installation..."
 if kubectl get nodes; then
     print_success "Kubernetes cluster is running"
+    kubectl get nodes
 else
     print_error "Kubernetes cluster is not running properly"
     exit 1
@@ -263,12 +303,32 @@ print_success "Flannel CNI installed"
 
 # Wait for CNI to be ready
 print_status "Waiting for CNI to be ready..."
-sleep 60
+for i in {1..30}; do
+    if kubectl wait --for=condition=ready pod -l app=flannel -n kube-flannel --timeout=10s &>/dev/null; then
+        print_success "Flannel CNI is ready"
+        break
+    fi
+    print_status "Waiting for CNI to be ready... (attempt $i/30)"
+    sleep 10
+done
 
-# Remove taint from master node to allow scheduling
+# Remove taint from master node to allow scheduling (only if taints exist)
 print_status "Configuring master node for single-node cluster..."
-kubectl taint nodes --all node-role.kubernetes.io/control-plane-
-kubectl taint nodes --all node-role.kubernetes.io/master-
+# Check if control-plane taint exists before trying to remove it
+if kubectl get nodes -o jsonpath='{.items[0].spec.taints[*].key}' | grep -q "node-role.kubernetes.io/control-plane"; then
+    kubectl taint nodes --all node-role.kubernetes.io/control-plane:NoSchedule- --ignore-not-found
+    print_success "Control-plane taint removed"
+else
+    print_status "No control-plane taint found - node is already schedulable"
+fi
+
+# Check if master taint exists before trying to remove it
+if kubectl get nodes -o jsonpath='{.items[0].spec.taints[*].key}' | grep -q "node-role.kubernetes.io/master"; then
+    kubectl taint nodes --all node-role.kubernetes.io/master:NoSchedule- --ignore-not-found
+    print_success "Master taint removed"
+else
+    print_status "No master taint found - node is already schedulable"
+fi
 
 # Install AMD GPU drivers (if AMD GPUs are present)
 if [ "$GPU_COUNT" -gt 0 ]; then
