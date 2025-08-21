@@ -47,8 +47,10 @@ spec:
                               properties:
                                 requests:
                                   type: object
+                                  additionalProperties: true
                                 limits:
                                   type: object
+                                  additionalProperties: true
           status:
             type: object
             properties:
