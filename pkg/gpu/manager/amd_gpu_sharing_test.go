@@ -270,7 +270,7 @@ func TestAMDGPUSharingCapabilities(t *testing.T) {
 	// Check for key architecture notes
 	expectedNotes := []string{
 		"AMD Instinct MI300X supports advanced hardware partitioning with 8 XCDs and SR-IOV isolation",
-		"MI300X compute partitioning: SPX (single), CPX (8 separate GPUs), TPX modes",
+		"MI300X compute partitioning: SPX (single), CPX (8 separate GPUs)",
 	}
 
 	for _, expectedNote := range expectedNotes {

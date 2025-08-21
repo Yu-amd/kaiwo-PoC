@@ -10,7 +10,7 @@ This document explains the AMD GPU sharing architecture implemented in Kaiwo, hi
 
 | Feature                   | NVIDIA vGPU (MIG)                     | AMD Instinct MI300X                             |
 |---------------------------|---------------------------------------|-------------------------------------------------|
-| **Hardware Partitioning** | ✅ Full hardware-level partitioning   | ✅ Advanced chiplet partitioning (SPX/CPX/TPX) |
+| **Hardware Partitioning** | ✅ Full hardware-level partitioning   | ✅ Advanced chiplet partitioning (SPX/CPX) |
 | **Memory Isolation**      | ✅ Dedicated memory per partition     | ✅ NUMA memory partitioning (NPS1/NPS4)        |
 | **Compute Isolation**     | ✅ Dedicated compute units            | ✅ XCD-based compute isolation (8 XCDs)        |
 | **Fractional Allocation** | ✅ True hardware-level fractions      | ✅ Hardware-level XCD fractions                |
@@ -108,7 +108,7 @@ amd-smi reset --memory-partition
 AMD Instinct MI300X GPU Sharing
 ├── MI300X Hardware Partitioning
 │   ├── XCD Management (8 XCDs per MI300X)
-│   ├── Compute Partitioning (SPX/CPX/TPX)
+│   ├── Compute Partitioning (SPX/CPX)
 │   ├── Memory Partitioning (NPS1/NPS4)
 │   ├── SR-IOV Virtual Function Management
 │   └── Concurrent XCD Execution
@@ -169,7 +169,7 @@ type AMDGPUSharing struct {
 **Hardware Partitioning Constraints:**
 ```go
 type MI300XPartitionConfig struct {
-    ComputeMode MI300XPartitionMode `json:"computeMode"` // SPX/CPX/TPX
+    ComputeMode MI300XPartitionMode `json:"computeMode"` // SPX/CPX
     MemoryMode  MI300XMemoryMode    `json:"memoryMode"`  // NPS1/NPS4
     XCDCount    int                 `json:"xcdCount"`    // Always 8 for MI300X
 }
@@ -178,7 +178,7 @@ type MI300XPartitionConfig struct {
 **Valid Fractions by Partitioning Mode:**
 - **SPX Mode**: Only `1.0` (full GPU) - All 8 XCDs as single device
 - **CPX Mode**: `[0.125, 0.25, 0.375, 0.5, 0.625, 0.75, 0.875, 1.0]` - Each XCD as separate GPU
-- **TPX Mode**: `[0.125, 0.25, 0.5, 0.75, 1.0]` - Custom partitioning
+
 
 **XCD-Level Allocation Tracking:**
 ```go
@@ -274,7 +274,7 @@ spec:
 1. **Hardware-Aware Fraction Selection**: Choose fractions that match the configured partitioning mode
    - **SPX Mode**: Use only `1.0` for full GPU allocation
    - **CPX Mode**: Use multiples of `0.125` (1 XCD) up to `1.0` (8 XCDs)
-   - **TPX Mode**: Use predefined fractions based on custom partitioning
+   
 
 2. **Memory Planning**: Ensure total memory requests don't exceed GPU capacity
 3. **Time Slice Tuning**: Adjust time slices based on workload characteristics
@@ -296,7 +296,7 @@ spec:
   gpu:
     amd:
       # MI300X Partitioning Configuration
-      computeMode: "CPX"         # SPX, CPX, or TPX
+      computeMode: "CPX"         # SPX or CPX
       memoryMode: "NPS4"         # NPS1 or NPS4 (NPS4 only with CPX)
       xcdCount: 8                # Always 8 for MI300X
       
@@ -374,7 +374,7 @@ kaiwo_gpu_partitioning_compliance{device_id="card0", compute_mode="CPX", memory_
 2. **Memory Optimization**: Better memory management and reclamation
 3. **Performance Profiling**: Workload performance analysis and optimization
 4. **Dynamic Time Slices**: Adaptive time slice allocation based on workload characteristics
-5. **Dynamic Partitioning**: Runtime switching between SPX/CPX/TPX modes
+5. **Dynamic Partitioning**: Runtime switching between SPX/CPX modes
 6. **XCD-Level Optimization**: Fine-grained XCD allocation and optimization
 7. **Hardware-Aware Scheduling**: Scheduling decisions based on actual hardware capabilities
 
@@ -527,7 +527,7 @@ The AMD Instinct MI300X GPU sharing implementation provides a comprehensive solu
 
 ### AMD Instinct MI300X (Advanced Chiplet Architecture)
 Based on the [official AMD ROCm documentation](https://rocm.blogs.amd.com/software-tools-optimization/compute-memory-modes/README.html), MI300X provides:
-- **Advanced Hardware Partitioning**: 8 XCDs with SPX/CPX/TPX compute partitioning modes
+- **Advanced Hardware Partitioning**: 8 XCDs with SPX/CPX compute partitioning modes
 - **NUMA Memory Partitioning**: NPS1/NPS4 memory partitioning with up to 1TB/s bandwidth per XCD
 - **SR-IOV Isolation**: Hardware-level Virtual Function isolation for security
 - **Explicit Workgroup Control**: CPX mode allows explicit XCD assignment

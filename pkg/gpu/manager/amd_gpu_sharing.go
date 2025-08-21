@@ -265,7 +265,7 @@ func GetAMDGPUSharingCapabilities() map[string]interface{} {
 				"concurrent_execution":  true,
 				"resource_guarantees":   true,
 				"xcd_isolation":         true,
-				"compute_modes":         []string{"SPX", "CPX", "TPX"},
+				"compute_modes":         []string{"SPX", "CPX"},
 				"memory_modes":          []string{"NPS1", "NPS4"},
 				"xcd_count":             8,
 				"hbm_stacks":            8,
@@ -275,7 +275,7 @@ func GetAMDGPUSharingCapabilities() map[string]interface{} {
 		},
 		"notes": []string{
 			"AMD Instinct MI300X supports advanced hardware partitioning with 8 XCDs and SR-IOV isolation",
-			"MI300X compute partitioning: SPX (single), CPX (8 separate GPUs), TPX modes",
+			"MI300X compute partitioning: SPX (single), CPX (8 separate GPUs)",
 			"MI300X memory partitioning: NPS1 (unified), NPS4 (quadrant-based) with up to 1TB/s per XCD",
 			"Fractional allocation is hardware-based on MI300X XCDs",
 			"Memory isolation is NUMA-based on MI300X",
