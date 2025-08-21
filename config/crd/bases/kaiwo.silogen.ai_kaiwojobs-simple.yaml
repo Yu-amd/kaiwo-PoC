@@ -1,0 +1,71 @@
+apiVersion: apiextensions.k8s.io/v1
+kind: CustomResourceDefinition
+metadata:
+  name: kaiwojobs.kaiwo.silogen.ai
+  annotations:
+    controller-gen.kubebuilder.io/version: v0.14.0
+spec:
+  group: kaiwo.silogen.ai
+  names:
+    kind: KaiwoJob
+    listKind: KaiwoJobList
+    plural: kaiwojobs
+    singular: kaiwojob
+  scope: Namespaced
+  versions:
+  - name: v1alpha1
+    schema:
+      openAPIV3Schema:
+        type: object
+        properties:
+          apiVersion:
+            type: string
+          kind:
+            type: string
+          metadata:
+            type: object
+          spec:
+            type: object
+            properties:
+              template:
+                type: object
+                properties:
+                  spec:
+                    type: object
+                    properties:
+                      containers:
+                        type: array
+                        items:
+                          type: object
+                          properties:
+                            name:
+                              type: string
+                            image:
+                              type: string
+                            resources:
+                              type: object
+                              properties:
+                                requests:
+                                  type: object
+                                limits:
+                                  type: object
+          status:
+            type: object
+            properties:
+              phase:
+                type: string
+              conditions:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    type:
+                      type: string
+                    status:
+                      type: string
+                    message:
+                      type: string
+    served: true
+    storage: true
+    subresources:
+      status: {}
