@@ -16,8 +16,6 @@ const (
 	MI300XPartitionModeSPX MI300XPartitionMode = "SPX"
 	// MI300XPartitionModeCPX - Core Partitioned X-celerator: Each XCD as separate GPU
 	MI300XPartitionModeCPX MI300XPartitionMode = "CPX"
-	// MI300XPartitionModeTPX - Additional partitioning mode
-	MI300XPartitionModeTPX MI300XPartitionMode = "TPX"
 )
 
 // MI300XMemoryMode represents the memory partitioning mode
@@ -98,7 +96,7 @@ func (f *MI300XFractionalAllocator) validatePartitionConfig(config *MI300XPartit
 	}
 
 	switch config.ComputeMode {
-	case MI300XPartitionModeSPX, MI300XPartitionModeCPX, MI300XPartitionModeTPX:
+	case MI300XPartitionModeSPX, MI300XPartitionModeCPX:
 		// Valid compute modes
 	default:
 		return fmt.Errorf("invalid compute mode: %s", config.ComputeMode)
@@ -138,11 +136,6 @@ func (f *MI300XFractionalAllocator) GetValidFractions(deviceID string) []float64
 			fractions = append(fractions, float64(i)/8.0)
 		}
 		return fractions
-
-	case MI300XPartitionModeTPX:
-		// TPX mode: Custom partitioning (implementation specific)
-		// For now, return common fractions
-		return []float64{0.125, 0.25, 0.5, 0.75, 1.0}
 
 	default:
 		return []float64{1.0}
@@ -191,8 +184,6 @@ func (f *MI300XFractionalAllocator) CanAllocate(deviceID string, request *types.
 		return f.canAllocateSPX(deviceID, request)
 	case MI300XPartitionModeCPX:
 		return f.canAllocateCPX(deviceID, request)
-	case MI300XPartitionModeTPX:
-		return f.canAllocateTPX(deviceID, request)
 	default:
 		return false, fmt.Errorf("unknown compute mode: %s", config.ComputeMode)
 	}
@@ -249,27 +240,7 @@ func (f *MI300XFractionalAllocator) canAllocateCPX(deviceID string, request *typ
 	return true, nil
 }
 
-// canAllocateTPX checks allocation for TPX mode (custom partitioning)
-func (f *MI300XFractionalAllocator) canAllocateTPX(deviceID string, request *types.GPURequest) (bool, error) {
-	// TPX mode allows more flexible partitioning
-	// For now, use similar logic to CPX but with more flexibility
-	availableFraction := f.getAvailableFraction(deviceID)
-	if request.Fraction > availableFraction {
-		return false, fmt.Errorf("insufficient fractional capacity: requested %f, available %f",
-			request.Fraction, availableFraction)
-	}
 
-	// Check memory capacity
-	if request.MemoryRequest > 0 {
-		availableMemory := f.getAvailableMemory(deviceID)
-		if request.MemoryRequest*1024*1024 > availableMemory {
-			return false, fmt.Errorf("insufficient memory: requested %d MiB, available %d bytes",
-				request.MemoryRequest, availableMemory)
-		}
-	}
-
-	return true, nil
-}
 
 // Allocate performs a fractional allocation for MI300X
 func (f *MI300XFractionalAllocator) Allocate(deviceID string, request *types.AllocationRequest) (*types.GPUAllocation, error) {
@@ -394,16 +365,6 @@ func (f *MI300XFractionalAllocator) getAvailableFraction(deviceID string) float6
 		// CPX mode: Available XCDs / 8
 		availableXCDs := f.getAvailableXCDs(deviceID)
 		return float64(availableXCDs) / 8.0
-
-	case MI300XPartitionModeTPX:
-		// TPX mode: More flexible calculation
-		totalCapacity := f.gpuCapacity[deviceID]
-		usedCapacity := f.getUsedFraction(deviceID)
-		available := totalCapacity - usedCapacity
-		if available < 0 {
-			available = 0
-		}
-		return available
 
 	default:
 		return 0.0

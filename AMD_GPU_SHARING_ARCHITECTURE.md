@@ -23,30 +23,36 @@ This document explains the AMD GPU sharing architecture implemented in Kaiwo, hi
 
 ### AMD Instinct MI300X Chiplet Architecture
 
-Based on the [official AMD ROCm documentation](https://rocm.blogs.amd.com/software-tools-optimization/compute-memory-modes/README.html), AMD Instinct MI300X GPUs use a sophisticated **chiplet-based architecture** with advanced hardware partitioning capabilities:
+Based on the [official AMD Instinct MI300X GPU Partitioning Overview](https://instinct.docs.amd.com/projects/amdgpu-docs/en/latest/gpu-partitioning/mi300x/overview.html), AMD Instinct MI300X GPUs use a sophisticated **chiplet-based architecture** with advanced hardware partitioning capabilities:
 
 #### MI300X Architecture Components
-- **XCD (Accelerator Complex Die)**: 8 XCDs per MI300X, each with its own L2 cache
-- **IOD (I/O Die)**: 4 IODs per MI300X, each containing network connectivity
-- **HBM Memory**: 8 HBM stacks (2 per IOD) providing high-bandwidth memory
-- **Inter-die Interconnect**: High-speed connectivity between chiplets
+- **XCD (Accelerator Complex Die)**: 8 XCDs per MI300X, each containing 38 Compute Units (CUs), responsible for executing parallel workloads
+- **IOD (I/O Die)**: 4 IODs per MI300X, managing interconnects, memory, and data routing across the chiplets
+- **3D Stacking**: Each pair of XCDs is 3D-stacked on a single IOD allowing for tight integration and low-latency interconnects
+- **HBM (High-Bandwidth Memory)**: 8 stacks of HBM, offering 192GB of unified memory
+- **Total GPU Configuration**: 
+  - 8 XCDs per GPU → 304 total CUs
+  - 4 IODs per GPU
+  - 8 HBM stacks (2 per IOD)
+  - 192GB of unified HBM capacity
 
 #### Hardware Partitioning Modes
 
 **Compute Partitioning Modes (MCP - Modular Chiplet Platform):**
-- **SPX (Single Partition X-celerator)**: All 8 XCDs appear as a single logical device
+- **SPX (Single Partition X-celerator)**: All 8 XCDs appear as a single logical device (default mode)
 - **CPX (Core Partitioned X-celerator)**: Each XCD appears as a separate logical GPU (8 separate GPUs)
-- **TPX**: Additional partitioning mode for specific use cases
 
 **Memory Partitioning Modes (NUMA Per Socket - NPS):**
-- **NPS1**: Entire memory accessible to all XCDs (compatible with CPX and SPX)
-- **NPS4**: Memory partitioned into quadrants, each directly visible to logical devices in its quadrant (compatible with CPX only)
+- **NPS1 (Unified Memory)**: All 8 HBM stacks are viewed as one unified memory pool accessible to all XCDs (compatible with SPX and CPX)
+- **NPS4 (Partitioned Memory)**: Pairs of HBM stacks forming 48GB each are viewed as separate memory partitions (CPX only)
 
 #### Advanced Hardware Partitioning Capabilities
-- **True Hardware Isolation**: SR-IOV (Single Root IO Virtualization) provides Virtual Function isolation
+- **True Hardware Isolation**: Hardware-level partitioning with spatial isolation
 - **Explicit Workgroup Control**: CPX mode allows explicit control over which XCD a workgroup is assigned to
 - **Memory Localization**: NPS4 mode enables localized memory accesses for improved bandwidth
 - **Concurrent Multi-Partition Execution**: Multiple partitions can run simultaneously with hardware isolation
+- **Dynamic Resource Provisioning**: Runtime configuration of compute and memory without system reboot
+- **Peer-to-Peer Access**: P2P access between XCDs available and can be enabled
 
 
 
@@ -63,30 +69,38 @@ Our implementation focuses on **AMD Instinct MI300X**:
 
 ### MI300X Performance Benefits
 
-Based on the [AMD ROCm benchmarks](https://rocm.blogs.amd.com/software-tools-optimization/compute-memory-modes/README.html):
+Based on the [official AMD Instinct MI300X GPU Partitioning Overview](https://instinct.docs.amd.com/projects/amdgpu-docs/en/latest/gpu-partitioning/mi300x/overview.html):
 
 #### Memory Bandwidth Improvements
-- **CPX/NPS4 mode**: 5-10% higher bandwidth in stream benchmarks
-- **Single XCD bandwidth**: Up to 1TB/s bandwidth per XCD in NPS4 mode
-- **Localized memory access**: Improved performance through memory localization
+- **NPS4 mode**: Minimized traffic latency to HBM with shorter latency and faster transitions from idle to full bandwidth
+- **Higher bandwidth to MALL**: Memory Attached Last Level Cache bandwidth optimization in NPS4 mode
+- **Localized memory access**: Memory quadrants directly visible to logical devices in their quadrant
 
 #### Compute Performance Improvements
-- **CPX/NPS1 and CPX/NPS4**: 10-15% higher total system throughput than SPX mode
-- **Higher clock speeds**: CPX/NPS4 runs at consistently higher compute clock speeds
-- **Better cache utilization**: Improved use of caches in CPX mode
+- **Improved performance for small to mid-sized language models**: Partitioning into logical CPX GPUs allows small models (≤13B parameters) to run independently within each GPU slice
+- **Enhanced communication efficiency**: CPX + NPS4 mode aligns well with multi-GPU collective communication patterns
+- **Power savings and thermal optimization**: Memory partitioning reduces power consumed by HBM3 memory stacks per workload
+- **Improved workload packing and density**: Logical GPU slicing allows simultaneous deployment of multiple containerized inference services per MI300X GPU
 
 #### Configuration Modes
 ```bash
-# Compute partitioning modes
-amd-smi set --compute-partition {CPX, SPX, TPX}
+# Compute partitioning modes (MCP - Modular Chiplet Platform)
+amd-smi set --compute-partition {CPX, SPX}
 
-# Memory partitioning modes  
+# Memory partitioning modes (NPS - NUMA Per Socket)
 amd-smi set --memory-partition {NPS1, NPS4}
 
 # Reset partitions
 amd-smi reset --compute-partition
 amd-smi reset --memory-partition
 ```
+
+**Partition Modes Comparison**
+
+| Mode | Logical Devices | CUs per Device | Memory per Device | Best For |
+|------|----------------|----------------|-------------------|----------|
+| SPX  | 1              | 304            | 192GB             | Unified workloads |
+| CPX  | 8              | 38             | 24GB              | Isolation, fine-grained scheduling, small batch sizes |
 
 ### Implementation Architecture
 
@@ -390,11 +404,9 @@ func (f *MI300XFractionalAllocator) GetValidFractions(deviceID string) []float64
     
     switch config.ComputeMode {
     case MI300XPartitionModeSPX:
-        return []float64{1.0}  // Only full GPU
+        return []float64{1.0}  // Only full GPU (304 CUs, 192GB)
     case MI300XPartitionModeCPX:
-        return []float64{0.125, 0.25, 0.375, 0.5, 0.625, 0.75, 0.875, 1.0}  // XCD-based
-    case MI300XPartitionModeTPX:
-        return []float64{0.125, 0.25, 0.5, 0.75, 1.0}  // Custom partitioning
+        return []float64{0.125, 0.25, 0.375, 0.5, 0.625, 0.75, 0.875, 1.0}  // XCD-based (38 CUs, 24GB per XCD)
     }
 }
 ```
@@ -415,6 +427,9 @@ func (f *MI300XFractionalAllocator) allocateXCDs(deviceID string, allocation *ty
         }
     }
 }
+
+// Each XCD provides 38 CUs and 24GB HBM in CPX mode
+// SPX mode provides 304 CUs and 192GB HBM as single device
 ```
 
 #### **3. Mode-Specific Validation**
@@ -435,7 +450,7 @@ func (f *MI300XFractionalAllocator) ValidateFraction(deviceID string, fraction f
 
 ### Usage Examples
 
-#### **SPX Mode Configuration**
+#### **SPX Mode Configuration (Default Mode)**
 ```yaml
 apiVersion: kaiwo.ai/v1alpha1
 kind: KaiwoJob
@@ -449,13 +464,13 @@ spec:
         image: amd/rocm-pytorch
         resources:
           limits:
-            kaiwo.ai/gpu: "1.0"  # ✅ Only valid fraction for SPX
+            kaiwo.ai/gpu: "1.0"  # ✅ Only valid fraction for SPX (304 CUs, 192GB)
             kaiwo.ai/gpu-memory: "8192"
         env:
         - name: AMD_GPU_COMPUTE_MODE
           value: "SPX"
         - name: AMD_GPU_MEMORY_MODE
-          value: "NPS1"
+          value: "NPS1"  # Unified memory pool
 ```
 
 #### **CPX Mode Configuration**
@@ -472,13 +487,13 @@ spec:
         image: amd/rocm-pytorch
         resources:
           limits:
-            kaiwo.ai/gpu: "0.25"  # ✅ 2 XCDs (valid for CPX)
+            kaiwo.ai/gpu: "0.25"  # ✅ 2 XCDs (76 CUs, 48GB) - valid for CPX
             kaiwo.ai/gpu-memory: "2048"
         env:
         - name: AMD_GPU_COMPUTE_MODE
           value: "CPX"
         - name: AMD_GPU_MEMORY_MODE
-          value: "NPS4"
+          value: "NPS4"  # Partitioned memory (48GB per quadrant)
 ```
 
 ### Error Handling
@@ -491,10 +506,10 @@ kaiwo.ai/gpu: "0.5"  # Error: fraction 0.5 is not valid for GPU card0. Valid fra
 # ❌ INVALID - Not a multiple of 0.125 in CPX mode
 kaiwo.ai/gpu: "0.3"  # Error: fraction 0.3 is not valid for GPU card0. Valid fractions: [0.125, 0.25, 0.375, 0.5, 0.625, 0.75, 0.875, 1.0]
 
-# ✅ VALID - Multiple of 0.125 (1 XCD)
+# ✅ VALID - 1 XCD (38 CUs, 24GB)
 kaiwo.ai/gpu: "0.125"
 
-# ✅ VALID - Multiple of 0.125 (4 XCDs)
+# ✅ VALID - 4 XCDs (152 CUs, 96GB)
 kaiwo.ai/gpu: "0.5"
 ```
 

@@ -191,19 +191,7 @@ func TestGetValidFractions(t *testing.T) {
 		}
 	}
 
-	// Test TPX mode
-	tpxConfig := &MI300XPartitionConfig{
-		ComputeMode: MI300XPartitionModeTPX,
-		MemoryMode:  MI300XMemoryModeNPS1,
-		XCDCount:    8,
-	}
-	allocator.RegisterMI300XGPU("card2", 8*1024*1024*1024, tpxConfig)
 
-	tpxFractions := allocator.GetValidFractions("card2")
-	expectedTPX := []float64{0.125, 0.25, 0.5, 0.75, 1.0}
-	if len(tpxFractions) != len(expectedTPX) {
-		t.Errorf("Expected %d TPX fractions, got %d", len(expectedTPX), len(tpxFractions))
-	}
 }
 
 func TestValidateFraction(t *testing.T) {
