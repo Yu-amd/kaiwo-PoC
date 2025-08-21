@@ -140,7 +140,7 @@ func (r *GPUReservationManager) CreateReservation(ctx context.Context, request *
 
 	// Check for conflicts
 	conflicts := r.checkConflicts(request)
-	if len(conflicts) > 0 && r.config.ConflictResolutionPolicy == "strict" {
+	if len(conflicts) > 0 && r.config.ConflictResolutionPolicy == ConflictResolutionPolicyStrict {
 		return nil, fmt.Errorf("reservation conflicts detected: %v", conflicts)
 	}
 

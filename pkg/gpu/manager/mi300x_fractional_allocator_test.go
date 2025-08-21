@@ -301,7 +301,10 @@ func TestCanAllocateCPX(t *testing.T) {
 		MemoryMode:  MI300XMemoryModeNPS4,
 		XCDCount:    8,
 	}
-	allocator.RegisterMI300XGPU("card0", 8*1024*1024*1024, cpxConfig) // 8GB
+	err := allocator.RegisterMI300XGPU("card0", 8*1024*1024*1024, cpxConfig) // 8GB
+	if err != nil {
+		t.Fatalf("Failed to register GPU: %v", err)
+	}
 
 	// Test valid CPX allocation (1 XCD = 0.125)
 	request := &types.GPURequest{
@@ -357,7 +360,10 @@ func TestAllocateAndRelease(t *testing.T) {
 		MemoryMode:  MI300XMemoryModeNPS4,
 		XCDCount:    8,
 	}
-	allocator.RegisterMI300XGPU("card0", 8*1024*1024*1024, cpxConfig)
+	err := allocator.RegisterMI300XGPU("card0", 8*1024*1024*1024, cpxConfig)
+	if err != nil {
+		t.Fatalf("Failed to register GPU: %v", err)
+	}
 
 	// Create allocation request
 	request := &types.AllocationRequest{
@@ -424,7 +430,10 @@ func TestMultipleAllocations(t *testing.T) {
 		MemoryMode:  MI300XMemoryModeNPS4,
 		XCDCount:    8,
 	}
-	allocator.RegisterMI300XGPU("card0", 8*1024*1024*1024, cpxConfig)
+	err := allocator.RegisterMI300XGPU("card0", 8*1024*1024*1024, cpxConfig)
+	if err != nil {
+		t.Fatalf("Failed to register GPU: %v", err)
+	}
 
 	// Allocate first workload (2 XCDs)
 	request1 := &types.AllocationRequest{
@@ -439,7 +448,7 @@ func TestMultipleAllocations(t *testing.T) {
 		ContainerName: "container-1",
 	}
 
-	_, err := allocator.Allocate("card0", request1)
+	_, err = allocator.Allocate("card0", request1)
 	if err != nil {
 		t.Fatalf("Failed to allocate first workload: %v", err)
 	}
@@ -511,7 +520,10 @@ func TestGetGPUUtilization(t *testing.T) {
 		MemoryMode:  MI300XMemoryModeNPS4,
 		XCDCount:    8,
 	}
-	allocator.RegisterMI300XGPU("card0", 8*1024*1024*1024, cpxConfig)
+	err := allocator.RegisterMI300XGPU("card0", 8*1024*1024*1024, cpxConfig)
+	if err != nil {
+		t.Fatalf("Failed to register GPU: %v", err)
+	}
 
 	// Allocate workload
 	request := &types.AllocationRequest{
@@ -526,7 +538,7 @@ func TestGetGPUUtilization(t *testing.T) {
 		ContainerName: "test-container",
 	}
 
-	_, err := allocator.Allocate("card0", request)
+	_, err = allocator.Allocate("card0", request)
 	if err != nil {
 		t.Fatalf("Failed to allocate: %v", err)
 	}
@@ -567,7 +579,10 @@ func TestCleanupExpiredAllocations(t *testing.T) {
 		MemoryMode:  MI300XMemoryModeNPS4,
 		XCDCount:    8,
 	}
-	allocator.RegisterMI300XGPU("card0", 8*1024*1024*1024, cpxConfig)
+	err := allocator.RegisterMI300XGPU("card0", 8*1024*1024*1024, cpxConfig)
+	if err != nil {
+		t.Fatalf("Failed to register GPU: %v", err)
+	}
 
 	// Create allocation with expiration
 	expiration := time.Now().Add(-1 * time.Hour) // Expired 1 hour ago
@@ -584,7 +599,7 @@ func TestCleanupExpiredAllocations(t *testing.T) {
 		ExpiresAt:     &expiration,
 	}
 
-	_, err := allocator.Allocate("card0", request)
+	_, err = allocator.Allocate("card0", request)
 	if err != nil {
 		t.Fatalf("Failed to allocate: %v", err)
 	}
