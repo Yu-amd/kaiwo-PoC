@@ -103,8 +103,30 @@ EXAMPLES:
 EOF
 }
 
+setup_environment() {
+    log "INFO" "Setting up environment..."
+    
+    # Ensure PATH includes common binary locations
+    export PATH="/usr/local/bin:/usr/bin:/bin:$PATH"
+    
+    # Add common Go binary locations
+    if [ -n "$GOPATH" ]; then
+        export PATH="$GOPATH/bin:$PATH"
+    fi
+    
+    # Add common Python binary locations
+    if [ -n "$HOME" ]; then
+        export PATH="$HOME/.local/bin:$PATH"
+    fi
+    
+    log "INFO" "PATH: $PATH"
+}
+
 check_prerequisites() {
     log "INFO" "Checking prerequisites..."
+    
+    # Setup environment first
+    setup_environment
     
     # Check Go
     if ! command -v go &> /dev/null; then
@@ -123,19 +145,26 @@ check_prerequisites() {
         log "WARNING" "Python environment is externally managed - some Python tests may be skipped"
     fi
     
-    # Check Docker
-    if ! command -v docker &> /dev/null; then
-        log "WARNING" "Docker is not installed - some tests may fail"
-    fi
-    
     # Check kubectl
     if ! command -v kubectl &> /dev/null; then
-        log "WARNING" "kubectl is not installed - some tests may fail"
+        log "ERROR" "kubectl is not installed - required for integration tests"
+        exit 1
     fi
     
-    # Check Kind
-    if ! command -v kind &> /dev/null; then
-        log "WARNING" "Kind is not installed - some tests may fail"
+    # Check if we can connect to a Kubernetes cluster
+    if ! kubectl cluster-info &> /dev/null; then
+        log "ERROR" "Cannot connect to Kubernetes cluster - required for integration tests"
+        exit 1
+    fi
+    
+    # Check Chainsaw (optional but recommended)
+    if ! command -v chainsaw &> /dev/null; then
+        log "WARNING" "Chainsaw is not installed - integration tests will be skipped"
+    fi
+    
+    # Check kaiwo-dev CLI (optional but recommended)
+    if ! command -v kaiwo-dev &> /dev/null; then
+        log "WARNING" "kaiwo-dev CLI is not installed - some tests may be skipped"
     fi
     
     log "SUCCESS" "Prerequisites check completed"
@@ -397,10 +426,18 @@ run_phase1_enhanced_scheduling() {
     
     cd "$PROJECT_ROOT"
     
-    # Check if Kind cluster exists
-    if ! kind get clusters | grep -q "kaiwo-test"; then
-        log "INFO" "Creating Kind cluster for Phase 1 Enhanced Scheduling tests..."
-        test/setup_kind.sh
+    # Use existing Kubernetes cluster instead of creating Kind cluster
+    log "INFO" "Using existing Kubernetes cluster for Phase 1 Enhanced Scheduling tests..."
+    
+    # Ensure kubectl is available and cluster is accessible
+    if ! command -v kubectl >/dev/null 2>&1; then
+        log "ERROR" "kubectl not found in PATH"
+        return 1
+    fi
+    
+    if ! kubectl cluster-info >/dev/null 2>&1; then
+        log "ERROR" "Cannot connect to Kubernetes cluster"
+        return 1
     fi
     
     # Run enhanced scheduling integration tests
@@ -432,10 +469,18 @@ run_phase1_resource_optimization() {
     
     cd "$PROJECT_ROOT"
     
-    # Check if Kind cluster exists
-    if ! kind get clusters | grep -q "kaiwo-test"; then
-        log "INFO" "Creating Kind cluster for Phase 1 Resource Optimization tests..."
-        test/setup_kind.sh
+    # Use existing Kubernetes cluster instead of creating Kind cluster
+    log "INFO" "Using existing Kubernetes cluster for Phase 1 Resource Optimization tests..."
+    
+    # Ensure kubectl is available and cluster is accessible
+    if ! command -v kubectl >/dev/null 2>&1; then
+        log "ERROR" "kubectl not found in PATH"
+        return 1
+    fi
+    
+    if ! kubectl cluster-info >/dev/null 2>&1; then
+        log "ERROR" "Cannot connect to Kubernetes cluster"
+        return 1
     fi
     
     # Run resource optimization integration tests
@@ -471,10 +516,18 @@ run_phase1_monitoring_improvements() {
     
     cd "$PROJECT_ROOT"
     
-    # Check if Kind cluster exists
-    if ! kind get clusters | grep -q "kaiwo-test"; then
-        log "INFO" "Creating Kind cluster for Phase 1 Monitoring Improvements tests..."
-        test/setup_kind.sh
+    # Use existing Kubernetes cluster instead of creating Kind cluster
+    log "INFO" "Using existing Kubernetes cluster for Phase 1 Monitoring Improvements tests..."
+    
+    # Ensure kubectl is available and cluster is accessible
+    if ! command -v kubectl >/dev/null 2>&1; then
+        log "ERROR" "kubectl not found in PATH"
+        return 1
+    fi
+    
+    if ! kubectl cluster-info >/dev/null 2>&1; then
+        log "ERROR" "Cannot connect to Kubernetes cluster"
+        return 1
     fi
     
     # Run monitoring improvements integration tests

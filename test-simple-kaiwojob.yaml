@@ -1,0 +1,18 @@
+apiVersion: kaiwo.silogen.ai/v1alpha1
+kind: KaiwoJob
+metadata:
+  name: test-simple-job
+  namespace: default
+spec:
+  template:
+    spec:
+      containers:
+      - name: test-container
+        image: nginx:latest
+        resources:
+          requests:
+            memory: "64Mi"
+            cpu: "250m"
+          limits:
+            memory: "128Mi"
+            cpu: "500m"
