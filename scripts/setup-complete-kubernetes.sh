@@ -334,40 +334,90 @@ fi
 if [ "$GPU_COUNT" -gt 0 ]; then
     print_step "Installing AMD GPU drivers..."
     
-    # Add ROCm repository
-    sudo mkdir -p /etc/apt/keyrings
-    curl -fsSL https://repo.radeon.com/rocm/rocm.gpg.key | sudo gpg --dearmor -o /etc/apt/keyrings/rocm.gpg
-    
-    echo 'deb [arch=amd64 signed-by=/etc/apt/keyrings/rocm.gpg] https://repo.radeon.com/rocm/apt/debian jammy main' | sudo tee /etc/apt/sources.list.d/rocm.list
-    echo -e 'Package: *\nPin: release o=repo.radeon.com\nPin-Priority: 600' | sudo tee /etc/apt/preferences.d/rocm-pin-600
-    
-    sudo apt update
-    sudo apt install -y rocm-dkms
+    # Install ROCm packages (using the approach from aim-engine)
+    sudo apt install -y rocm-hip-sdk rocm-opencl-sdk
     
     print_success "AMD GPU drivers installed"
     
     # Verify GPU detection
     if command -v rocm-smi &> /dev/null; then
         print_status "Verifying GPU detection..."
-        rocm-smi
+        rocm-smi --list-gpus
     fi
 fi
 
-# Install AMD GPU Operator
-print_step "Installing AMD GPU Operator..."
-helm repo add amd-gpu-operator https://rocm.github.io/amd-gpu-operator
-helm repo update
+# Setup AMD GPU support (using approach from aim-engine)
+print_step "Setting up AMD GPU support..."
 
-helm install amd-gpu-operator amd-gpu-operator/amd-gpu-operator \
-  --namespace gpu-operator-resources \
-  --create-namespace \
-  --wait
+# Create GPU device plugin for AMD MI300X (compatible with K8s 1.29)
+cat > /tmp/amd-gpu-device-plugin.yaml << 'EOF'
+apiVersion: apps/v1
+kind: DaemonSet
+metadata:
+  name: amd-gpu-device-plugin
+  namespace: kube-system
+spec:
+  selector:
+    matchLabels:
+      name: amd-gpu-device-plugin
+  template:
+    metadata:
+      labels:
+        name: amd-gpu-device-plugin
+    spec:
+      tolerations:
+      - key: node-role.kubernetes.io/control-plane
+        operator: Exists
+        effect: NoSchedule
+      containers:
+      - name: amd-gpu-device-plugin
+        image: rocm/k8s-device-plugin:latest
+        securityContext:
+          allowPrivilegeEscalation: false
+          readOnlyRootFilesystem: true
+        volumeMounts:
+          - name: device-plugin
+            mountPath: /var/lib/kubelet/device-plugins
+          - name: kfd
+            mountPath: /dev/kfd
+          - name: dri
+            mountPath: /dev/dri
+        env:
+          - name: KUBECONFIG
+            value: /var/lib/kubelet/device-plugins/kubeconfig
+      volumes:
+        - name: device-plugin
+          hostPath:
+            path: /var/lib/kubelet/device-plugins
+        - name: kfd
+          hostPath:
+            path: /dev/kfd
+        - name: dri
+          hostPath:
+            path: /dev/dri
+      nodeSelector:
+        kubernetes.io/os: linux
+EOF
 
-print_success "AMD GPU Operator installed"
+kubectl apply -f /tmp/amd-gpu-device-plugin.yaml
 
-# Wait for GPU operator to be ready
-print_status "Waiting for AMD GPU Operator to be ready..."
-sleep 60
+# Wait for GPU device plugin to be ready
+for i in {1..30}; do
+    if kubectl wait --for=condition=ready pod -l name=amd-gpu-device-plugin -n kube-system --timeout=10s &>/dev/null; then
+        print_success "AMD GPU device plugin is ready"
+        break
+    fi
+    print_status "Waiting for AMD GPU device plugin to be ready... (attempt $i/30)"
+    sleep 10
+done
+
+# Add GPU label to the node
+kubectl label node $(hostname) amd.com/gpu=true --overwrite
+
+print_success "AMD GPU support configured"
+
+# Wait for GPU device plugin to be ready (already handled above)
+print_status "AMD GPU device plugin setup completed"
 
 # Install additional tools for development
 print_step "Installing additional development tools..."
@@ -424,9 +474,21 @@ fi
 
 # Check for GPU support
 print_step "Checking GPU support..."
+
+# Check for AMD GPU resources
 if kubectl get nodes -o json | jq -r '.items[].status.allocatable | keys | .[] | select(contains("amd.com/gpu"))' 2>/dev/null | grep -q .; then
     print_success "AMD GPU support detected!"
     kubectl get nodes -o json | jq '.items[].status.allocatable | keys | .[] | select(contains("amd.com/gpu"))'
+    print_status "GPU Availability:"
+    kubectl get nodes -o json | jq '.items[0].status.allocatable."amd.com/gpu"' 2>/dev/null || echo "GPU information not available"
+elif command -v rocm-smi &> /dev/null; then
+    print_status "AMD ROCm detected, checking GPU device plugin status..."
+    if kubectl get pods -n kube-system | grep -q "amd-gpu-device-plugin"; then
+        print_success "AMD GPU device plugin is running"
+        kubectl get pods -n kube-system | grep "amd-gpu-device-plugin"
+    else
+        print_warning "AMD GPU device plugin not found, GPU resources may not be available"
+    fi
 else
     print_warning "No AMD GPU support detected. This is normal if no AMD GPUs are present."
 fi
