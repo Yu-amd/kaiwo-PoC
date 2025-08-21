@@ -5,6 +5,9 @@
 
 set -euo pipefail
 
+# Handle unbound variables gracefully
+set +u
+
 # Colors for output
 RED='\033[0;31m'
 GREEN='\033[0;32m'
@@ -110,12 +113,12 @@ setup_environment() {
     export PATH="/usr/local/bin:/usr/bin:/bin:$PATH"
     
     # Add common Go binary locations
-    if [ -n "$GOPATH" ]; then
-        export PATH="$GOPATH/bin:$PATH"
+    if [ -n "${GOPATH:-}" ] && [ -d "${GOPATH:-}/bin" ]; then
+        export PATH="${GOPATH}/bin:$PATH"
     fi
     
     # Add common Python binary locations
-    if [ -n "$HOME" ]; then
+    if [ -n "${HOME:-}" ]; then
         export PATH="$HOME/.local/bin:$PATH"
     fi
     
@@ -152,10 +155,14 @@ check_prerequisites() {
     fi
     
     # Check if we can connect to a Kubernetes cluster
+    log "INFO" "Checking Kubernetes cluster connectivity..."
     if ! kubectl cluster-info &> /dev/null; then
         log "ERROR" "Cannot connect to Kubernetes cluster - required for integration tests"
+        log "INFO" "kubectl version: $(kubectl version --client 2>/dev/null || echo 'kubectl not found')"
+        log "INFO" "kubectl config: $(kubectl config view --minify 2>/dev/null || echo 'kubectl config not found')"
         exit 1
     fi
+    log "INFO" "Kubernetes cluster is accessible"
     
     # Check Chainsaw (optional but recommended)
     if ! command -v chainsaw &> /dev/null; then
