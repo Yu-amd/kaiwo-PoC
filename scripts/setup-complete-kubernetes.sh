@@ -440,18 +440,14 @@ else
     print_success "kubectx and kubens already installed"
 fi
 
-# Install kubectl plugins
+# Install kubectl plugins (optional - skip if download fails)
 print_step "Installing kubectl plugins..."
-mkdir -p ~/.kube/plugins
 
-# Install kubectl tree plugin
-if ! kubectl tree --help &> /dev/null; then
-    curl -L https://github.com/ahmetb/kubectl-tree/releases/download/v0.2.1/kubectl-tree_v0.2.1_linux_amd64.tar.gz | tar -xz
-    sudo mv kubectl-tree /usr/local/bin/
-    print_success "kubectl tree plugin installed"
-else
-    print_success "kubectl tree plugin already installed"
-fi
+# Skip kubectl plugins for now as they're not essential
+print_status "Skipping kubectl plugins installation (optional component)"
+print_status "You can install them manually later if needed:"
+print_status "  - kubectl tree: https://github.com/ahmetb/kubectl-tree"
+print_status "  - kubectx/kubens: https://github.com/ahmetb/kubectx"
 
 # Verify the installation
 print_step "Verifying complete installation..."
@@ -593,7 +589,7 @@ echo "  ✅ AMD GPU Operator (GPU management)"
 echo "  ✅ Flannel CNI (networking)"
 echo "  ✅ k9s (interactive cluster view)"
 echo "  ✅ kubectx/kubens (context/namespace switching)"
-echo "  ✅ kubectl tree plugin (resource visualization)"
+echo "  ⚠️  kubectl plugins (optional - can be installed manually)"
 
 echo
 print_status "Next steps:"
