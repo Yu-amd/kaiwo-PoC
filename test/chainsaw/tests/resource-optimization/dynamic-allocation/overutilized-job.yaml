@@ -1,0 +1,22 @@
+apiVersion: kaiwo.silogen.ai/v1alpha1
+kind: KaiwoJob
+metadata:
+  name: overutilized-job
+spec:
+  user: test@amd.com
+  gpuVendor: "amd"
+  image: busybox:latest
+  entrypoint: |
+    echo "Starting overutilized job..."
+    # Simulate high GPU utilization
+    sleep 30
+    echo "Job completed with high utilization"
+  resources:
+    requests:
+      cpu: "1"
+      memory: "1Gi"
+      amd.com/gpu: "1"
+    limits:
+      cpu: "1"
+      memory: "1Gi"
+      amd.com/gpu: "1"

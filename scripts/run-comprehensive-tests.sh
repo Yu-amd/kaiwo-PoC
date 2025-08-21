@@ -28,6 +28,9 @@ PHASES=(
     "security-tests"
     "docs-tests"
     "build-tests"
+    "phase1-enhanced-scheduling"
+    "phase1-resource-optimization"
+    "phase1-monitoring-improvements"
 )
 
 # Global variables
@@ -86,6 +89,9 @@ TEST PHASES:
     security-tests        Security scanning
     docs-tests            Documentation validation
     build-tests           Build and package tests
+    phase1-enhanced-scheduling    Phase 1: Enhanced scheduling tests
+    phase1-resource-optimization  Phase 1: Resource optimization tests
+    phase1-monitoring-improvements Phase 1: Monitoring improvements tests
 
 EXAMPLES:
     $0                                    # Run all tests
@@ -381,6 +387,123 @@ run_build_tests() {
     log "SUCCESS" "Build tests completed"
 }
 
+run_phase1_enhanced_scheduling() {
+    log "INFO" "Running Phase 1 Enhanced Scheduling tests..."
+    
+    if [ "$DRY_RUN" = true ]; then
+        log "INFO" "DRY RUN: Would run Phase 1 Enhanced Scheduling tests"
+        return 0
+    fi
+    
+    cd "$PROJECT_ROOT"
+    
+    # Check if Kind cluster exists
+    if ! kind get clusters | grep -q "kaiwo-test"; then
+        log "INFO" "Creating Kind cluster for Phase 1 Enhanced Scheduling tests..."
+        test/setup_kind.sh
+    fi
+    
+    # Run enhanced scheduling integration tests
+    log "INFO" "Running enhanced scheduling integration tests..."
+    if [ -d "test/chainsaw/tests/enhanced-scheduling" ]; then
+        chainsaw test --config test/chainsaw/configs/ci.yaml test/chainsaw/tests/enhanced-scheduling/
+    else
+        log "WARNING" "Enhanced scheduling tests directory not found, skipping"
+    fi
+    
+    # Run enhanced scheduling unit tests
+    log "INFO" "Running enhanced scheduling unit tests..."
+    go test -v ./pkg/scheduling/enhanced/... -coverprofile=coverage-enhanced-scheduling.out
+    
+    # Run enhanced scheduling performance benchmarks
+    log "INFO" "Running enhanced scheduling performance benchmarks..."
+    go test -v ./test/performance/enhanced-scheduling/ -bench=. -benchmem
+    
+    log "SUCCESS" "Phase 1 Enhanced Scheduling tests completed"
+}
+
+run_phase1_resource_optimization() {
+    log "INFO" "Running Phase 1 Resource Optimization tests..."
+    
+    if [ "$DRY_RUN" = true ]; then
+        log "INFO" "DRY RUN: Would run Phase 1 Resource Optimization tests"
+        return 0
+    fi
+    
+    cd "$PROJECT_ROOT"
+    
+    # Check if Kind cluster exists
+    if ! kind get clusters | grep -q "kaiwo-test"; then
+        log "INFO" "Creating Kind cluster for Phase 1 Resource Optimization tests..."
+        test/setup_kind.sh
+    fi
+    
+    # Run resource optimization integration tests
+    log "INFO" "Running resource optimization integration tests..."
+    if [ -d "test/chainsaw/tests/resource-optimization" ]; then
+        chainsaw test --config test/chainsaw/configs/ci.yaml test/chainsaw/tests/resource-optimization/
+    else
+        log "WARNING" "Resource optimization tests directory not found, skipping"
+    fi
+    
+    # Run resource optimization unit tests
+    log "INFO" "Running resource optimization unit tests..."
+    go test -v ./pkg/optimization/... -coverprofile=coverage-resource-optimization.out
+    
+    # Run resource optimization performance benchmarks
+    log "INFO" "Running resource optimization performance benchmarks..."
+    go test -v ./test/performance/resource-optimization/ -bench=. -benchmem
+    
+    # Test dynamic allocation adjustment
+    log "INFO" "Testing dynamic allocation adjustment..."
+    go test -v ./pkg/optimization/dynamic/... -coverprofile=coverage-dynamic-allocation.out
+    
+    log "SUCCESS" "Phase 1 Resource Optimization tests completed"
+}
+
+run_phase1_monitoring_improvements() {
+    log "INFO" "Running Phase 1 Monitoring Improvements tests..."
+    
+    if [ "$DRY_RUN" = true ]; then
+        log "INFO" "DRY RUN: Would run Phase 1 Monitoring Improvements tests"
+        return 0
+    fi
+    
+    cd "$PROJECT_ROOT"
+    
+    # Check if Kind cluster exists
+    if ! kind get clusters | grep -q "kaiwo-test"; then
+        log "INFO" "Creating Kind cluster for Phase 1 Monitoring Improvements tests..."
+        test/setup_kind.sh
+    fi
+    
+    # Run monitoring improvements integration tests
+    log "INFO" "Running monitoring improvements integration tests..."
+    if [ -d "test/chainsaw/tests/monitoring-improvements" ]; then
+        chainsaw test --config test/chainsaw/configs/ci.yaml test/chainsaw/tests/monitoring-improvements/
+    else
+        log "WARNING" "Monitoring improvements tests directory not found, skipping"
+    fi
+    
+    # Run monitoring improvements unit tests
+    log "INFO" "Running monitoring improvements unit tests..."
+    go test -v ./pkg/monitoring/enhanced/... -coverprofile=coverage-monitoring-improvements.out
+    
+    # Run monitoring improvements performance benchmarks
+    log "INFO" "Running monitoring improvements performance benchmarks..."
+    go test -v ./test/performance/monitoring-improvements/ -bench=. -benchmem
+    
+    # Test real-time metrics collection
+    log "INFO" "Testing real-time metrics collection..."
+    go test -v ./pkg/monitoring/realtime/... -coverprofile=coverage-realtime-metrics.out
+    
+    # Test alerting system
+    log "INFO" "Testing alerting system..."
+    go test -v ./pkg/monitoring/alerting/... -coverprofile=coverage-alerting.out
+    
+    log "SUCCESS" "Phase 1 Monitoring Improvements tests completed"
+}
+
 run_phase() {
     local phase=$1
     
@@ -408,6 +531,15 @@ run_phase() {
             ;;
         "build-tests")
             run_build_tests
+            ;;
+        "phase1-enhanced-scheduling")
+            run_phase1_enhanced_scheduling
+            ;;
+        "phase1-resource-optimization")
+            run_phase1_resource_optimization
+            ;;
+        "phase1-monitoring-improvements")
+            run_phase1_monitoring_improvements
             ;;
         *)
             log "ERROR" "Unknown test phase: $phase"

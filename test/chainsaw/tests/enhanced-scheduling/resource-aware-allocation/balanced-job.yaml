@@ -1,0 +1,19 @@
+apiVersion: kaiwo.silogen.ai/v1alpha1
+kind: KaiwoJob
+metadata:
+  name: balanced-job
+spec:
+  user: test@amd.com
+  gpuVendor: "amd"
+  image: busybox:latest
+  entrypoint: "echo 'Balanced job' && sleep 10"
+  workloadType: "balanced"
+  resources:
+    requests:
+      cpu: "4"
+      memory: "4Gi"
+      amd.com/gpu: "1"
+    limits:
+      cpu: "4"
+      memory: "4Gi"
+      amd.com/gpu: "1"

@@ -1,0 +1,64 @@
+apiVersion: chainsaw.kyverno.io/v1alpha1
+kind: Test
+metadata:
+  name: dynamic-allocation-test
+spec:
+  concurrent: false
+  timeouts:
+    assert: 120s
+    cleanup: 60s
+  steps:
+  - try:
+    - patch:
+        resource:
+          apiVersion: config.kaiwo.silogen.ai/v1alpha1
+          kind: KaiwoConfig
+          metadata:
+            name: kaiwo
+          spec:
+            resourceOptimization:
+              enableDynamicAllocation: true
+              allocationAdjustmentThreshold: 0.2
+              monitoringInterval: 30s
+              targetNamespaces:
+              - ($namespace)
+    - apply:
+        file: underutilized-job.yaml
+    - apply:
+        file: overutilized-job.yaml
+    - sleep:
+        duration: 60s
+    - assert:
+        resource:
+          apiVersion: kaiwo.silogen.ai/v1alpha1
+          kind: KaiwoJob
+          metadata:
+            name: underutilized-job
+          status:
+            conditions:
+            - type: "ResourceOptimization"
+              status: "True"
+              reason: "AllocationReduced"
+    - assert:
+        resource:
+          apiVersion: kaiwo.silogen.ai/v1alpha1
+          kind: KaiwoJob
+          metadata:
+            name: overutilized-job
+          status:
+            conditions:
+            - type: "ResourceOptimization"
+              status: "True"
+              reason: "AllocationIncreased"
+    catch:
+    - command:
+        entrypoint: kaiwo-dev
+        env:
+        - name: NAMESPACE
+          value: ($namespace)
+        args: ["debug", "chainsaw", "--namespace=$NAMESPACE"]
+    finally:
+    - script:
+        content: kubectl delete kaiwojob underutilized-job --ignore-not-found
+    - script:
+        content: kubectl delete kaiwojob overutilized-job --ignore-not-found

@@ -1,0 +1,43 @@
+apiVersion: kaiwo.silogen.ai/v1alpha1
+kind: KaiwoJob
+metadata:
+  name: metrics-test-job
+spec:
+  user: test@amd.com
+  gpuVendor: "amd"
+  image: rocm/pytorch:latest
+  entrypoint: |
+    echo "Starting metrics test job..."
+    python3 -c "
+    import torch
+    import time
+    import os
+    
+    print('Testing GPU metrics collection...')
+    
+    if torch.cuda.is_available():
+        device = torch.device('cuda')
+        print(f'Using GPU: {torch.cuda.get_device_name(0)}')
+        
+        # Create some GPU workload to generate metrics
+        for i in range(10):
+            x = torch.randn(1000, 1000).to(device)
+            y = torch.randn(1000, 1000).to(device)
+            z = torch.mm(x, y)
+            print(f'Iteration {i+1}: GPU computation completed')
+            time.sleep(2)
+        
+        print('GPU metrics test completed successfully')
+    else:
+        print('No GPU available, skipping GPU metrics test')
+        time.sleep(10)
+    "
+  resources:
+    requests:
+      cpu: "2"
+      memory: "4Gi"
+      amd.com/gpu: "1"
+    limits:
+      cpu: "2"
+      memory: "4Gi"
+      amd.com/gpu: "1"

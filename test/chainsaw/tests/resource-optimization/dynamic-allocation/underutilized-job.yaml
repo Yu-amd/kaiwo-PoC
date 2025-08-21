@@ -1,0 +1,22 @@
+apiVersion: kaiwo.silogen.ai/v1alpha1
+kind: KaiwoJob
+metadata:
+  name: underutilized-job
+spec:
+  user: test@amd.com
+  gpuVendor: "amd"
+  image: busybox:latest
+  entrypoint: |
+    echo "Starting underutilized job..."
+    # Simulate low GPU utilization
+    sleep 30
+    echo "Job completed with low utilization"
+  resources:
+    requests:
+      cpu: "4"
+      memory: "8Gi"
+      amd.com/gpu: "1"
+    limits:
+      cpu: "4"
+      memory: "8Gi"
+      amd.com/gpu: "1"

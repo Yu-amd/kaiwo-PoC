@@ -1,0 +1,55 @@
+apiVersion: chainsaw.kyverno.io/v1alpha1
+kind: Test
+metadata:
+  name: realtime-metrics-test
+spec:
+  concurrent: false
+  timeouts:
+    assert: 90s
+    cleanup: 60s
+  steps:
+  - try:
+    - patch:
+        resource:
+          apiVersion: config.kaiwo.silogen.ai/v1alpha1
+          kind: KaiwoConfig
+          metadata:
+            name: kaiwo
+          spec:
+            monitoring:
+              enableRealtimeMetrics: true
+              metricsCollectionInterval: 10s
+              enablePerformanceTracking: true
+              targetNamespaces:
+              - ($namespace)
+    - apply:
+        file: metrics-test-job.yaml
+    - sleep:
+        duration: 45s
+    - assert:
+        resource:
+          apiVersion: kaiwo.silogen.ai/v1alpha1
+          kind: KaiwoJob
+          metadata:
+            name: metrics-test-job
+          status:
+            conditions:
+            - type: "PerformanceMetrics"
+              status: "True"
+              reason: "MetricsCollected"
+    - script:
+        content: kubectl get kaiwojob metrics-test-job -o jsonpath='{.status.performanceMetrics}'
+        check:
+          (contains($stdout, 'gpuUtilization')): true
+          (contains($stdout, 'memoryUsage')): true
+          (contains($stdout, 'throughput')): true
+    catch:
+    - command:
+        entrypoint: kaiwo-dev
+        env:
+        - name: NAMESPACE
+          value: ($namespace)
+        args: ["debug", "chainsaw", "--namespace=$NAMESPACE"]
+    finally:
+    - script:
+        content: kubectl delete kaiwojob metrics-test-job --ignore-not-found

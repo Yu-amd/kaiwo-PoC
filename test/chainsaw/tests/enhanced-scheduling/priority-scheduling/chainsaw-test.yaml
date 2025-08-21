@@ -1,0 +1,63 @@
+apiVersion: chainsaw.kyverno.io/v1alpha1
+kind: Test
+metadata:
+  name: priority-scheduling-test
+spec:
+  concurrent: false
+  timeouts:
+    assert: 60s
+    cleanup: 60s
+  steps:
+  - try:
+    - apply:
+        file: high-priority-job.yaml
+    - apply:
+        file: low-priority-job.yaml
+    - apply:
+        file: medium-priority-job.yaml
+    - sleep:
+        duration: 30s
+    - assert:
+        resource:
+          apiVersion: batch/v1
+          kind: Job
+          metadata:
+            name: high-priority-job
+          status:
+            conditions:
+            - type: "Complete"
+              status: "True"
+    - assert:
+        resource:
+          apiVersion: batch/v1
+          kind: Job
+          metadata:
+            name: medium-priority-job
+          status:
+            conditions:
+            - type: "Complete"
+              status: "True"
+    - assert:
+        resource:
+          apiVersion: batch/v1
+          kind: Job
+          metadata:
+            name: low-priority-job
+          status:
+            conditions:
+            - type: "Complete"
+              status: "True"
+    catch:
+    - command:
+        entrypoint: kaiwo-dev
+        env:
+        - name: NAMESPACE
+          value: ($namespace)
+        args: ["debug", "chainsaw", "--namespace=$NAMESPACE"]
+    finally:
+    - script:
+        content: kubectl delete kaiwojob high-priority-job --ignore-not-found
+    - script:
+        content: kubectl delete kaiwojob medium-priority-job --ignore-not-found
+    - script:
+        content: kubectl delete kaiwojob low-priority-job --ignore-not-found

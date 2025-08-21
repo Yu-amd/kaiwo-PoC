@@ -1,0 +1,19 @@
+apiVersion: kaiwo.silogen.ai/v1alpha1
+kind: KaiwoJob
+metadata:
+  name: low-priority-job
+spec:
+  user: test@amd.com
+  gpuVendor: "amd"
+  image: busybox:latest
+  entrypoint: "echo 'Low priority job completed' && sleep 5"
+  priority: 1
+  resources:
+    requests:
+      cpu: "1"
+      memory: "1Gi"
+      amd.com/gpu: "1"
+    limits:
+      cpu: "1"
+      memory: "1Gi"
+      amd.com/gpu: "1"

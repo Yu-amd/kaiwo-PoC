@@ -1,0 +1,19 @@
+apiVersion: kaiwo.silogen.ai/v1alpha1
+kind: KaiwoJob
+metadata:
+  name: compute-intensive-job
+spec:
+  user: test@amd.com
+  gpuVendor: "amd"
+  image: busybox:latest
+  entrypoint: "echo 'Compute intensive job' && sleep 10"
+  workloadType: "compute-intensive"
+  resources:
+    requests:
+      cpu: "8"
+      memory: "2Gi"
+      amd.com/gpu: "1"
+    limits:
+      cpu: "8"
+      memory: "2Gi"
+      amd.com/gpu: "1"
