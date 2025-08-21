@@ -71,16 +71,21 @@ spec:
           mount | grep -E "(dri|kfd)" || echo "No GPU-related mounts found"
           
           echo ""
+          echo "7. Testing rocm-smi..."
+          rocm-smi --list-gpus || echo "rocm-smi failed"
+          
+          echo ""
           echo "=== Test Complete ==="
         resources:
           limits:
             amd.com/gpu: 1
           requests:
             amd.com/gpu: 1
-        securityContext:
-          allowPrivilegeEscalation: false
-          runAsNonRoot: true
-          runAsUser: 1000
+        # Remove restrictive security context to allow GPU access
+        # securityContext:
+        #   allowPrivilegeEscalation: false
+        #   runAsNonRoot: true
+        #   runAsUser: 1000
         volumeMounts:
         - name: dri
           mountPath: /dev/dri
