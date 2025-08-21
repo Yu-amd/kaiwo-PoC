@@ -63,9 +63,9 @@ Based on the [official AMD Instinct MI300X GPU Partitioning Overview](https://in
 Our implementation focuses on **AMD Instinct MI300X**:
 
 1. **AMD Instinct MI300X (Chiplet)**: Advanced hardware-level partitioning with XCD isolation
-2. **MPS Support**: AMD's Multi-Process Service for workload isolation
-3. **Hardware Optimization**: Leverages MI300X's advanced chiplet capabilities
-4. **Performance Optimization**: Takes advantage of 10-15% performance gains from proper partitioning
+2. **Hardware Optimization**: Leverages MI300X's advanced chiplet capabilities
+3. **Performance Optimization**: Takes advantage of 10-15% performance gains from proper partitioning
+4. **Time-Slicing**: Software-based workload scheduling for resource sharing
 
 ### MI300X Performance Benefits
 
@@ -123,9 +123,9 @@ AMD Instinct MI300X GPU Sharing
 │   ├── NUMA Memory Allocation
 │   ├── Memory Localization (NPS4 mode)
 │   └── Memory Bandwidth Optimization
-└── MPS Integration
-    ├── Process Isolation
-    ├── Resource Sharing
+└── Time-Slicing Scheduler
+    ├── Workload Queue Management
+    ├── Round-Robin Scheduling
     └── Performance Monitoring
 ```
 
@@ -192,12 +192,12 @@ xcdAllocations map[string]map[int]*types.GPUAllocation // deviceID -> xcdIndex -
 - Mode compatibility validation
 - Performance-optimized allocation strategies
 
-#### 4. MPS (Multi-Process Service) Support
+#### 4. Time-Slicing Scheduler
 
-AMD's equivalent to NVIDIA MPS:
-- Process-level isolation
-- Shared GPU resources
-- Performance optimization
+Software-based workload scheduling for AMD GPUs:
+- Round-robin workload scheduling
+- Configurable time slices
+- Workload priority support
 - Resource contention management
 
 ## Usage Examples
@@ -223,7 +223,7 @@ spec:
         - name: KAIWO_GPU_SHARING
           value: "true"
         - name: KAIWO_GPU_ISOLATION
-          value: "mps"
+          value: "time-slicing"
 ```
 
 ### Multiple Workloads
@@ -304,7 +304,7 @@ spec:
       timeSlice: "30s"           # Time slice per workload
       maxWorkloads: 10           # Maximum workloads per GPU
       memoryOverhead: "512"      # Memory overhead per workload (MiB)
-      enableMPS: true           # Enable MPS support
+      enableTimeSlicing: true   # Enable time-slicing scheduler
       
       # Fractional Allocation Constraints
       validateFractions: true    # Enable hardware-aware fraction validation

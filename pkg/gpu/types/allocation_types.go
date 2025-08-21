@@ -319,7 +319,7 @@ func ValidateAllocationPolicy(policy *AllocationPolicy) error {
 
 	for _, isolationType := range policy.AllowedIsolationTypes {
 		switch isolationType {
-		case GPUIsolationMPS, GPUIsolationMIG, GPUIsolationNone:
+		case GPUIsolationTimeSlicing, GPUIsolationMIG, GPUIsolationNone:
 			// Valid isolation type
 		default:
 			return fmt.Errorf("invalid isolation type: %s", isolationType)

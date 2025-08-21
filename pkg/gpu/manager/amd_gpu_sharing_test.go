@@ -45,7 +45,7 @@ func TestAMDGPUSharing(t *testing.T) {
 		GPURequest: &types.GPURequest{
 			Fraction:       0.5, // Used for scheduling priority, not hardware partitioning
 			MemoryRequest:  2048, // 2GB
-			IsolationType:  types.GPUIsolationMPS,
+			IsolationType:  types.GPUIsolationTimeSlicing,
 			SharingEnabled: true,
 			Priority:       0,
 		},
@@ -139,7 +139,7 @@ func TestAMDGPUSharingMultipleWorkloads(t *testing.T) {
 			GPURequest: &types.GPURequest{
 				Fraction:       0.3,
 				MemoryRequest:  1024, // 1GB
-				IsolationType:  types.GPUIsolationMPS,
+				IsolationType:  types.GPUIsolationTimeSlicing,
 				SharingEnabled: true,
 			},
 		},
@@ -150,7 +150,7 @@ func TestAMDGPUSharingMultipleWorkloads(t *testing.T) {
 			GPURequest: &types.GPURequest{
 				Fraction:       0.7,
 				MemoryRequest:  2048, // 2GB
-				IsolationType:  types.GPUIsolationMPS,
+				IsolationType:  types.GPUIsolationTimeSlicing,
 				SharingEnabled: true,
 			},
 		},
@@ -161,7 +161,7 @@ func TestAMDGPUSharingMultipleWorkloads(t *testing.T) {
 			GPURequest: &types.GPURequest{
 				Fraction:       0.5,
 				MemoryRequest:  1536, // 1.5GB
-				IsolationType:  types.GPUIsolationMPS,
+				IsolationType:  types.GPUIsolationTimeSlicing,
 				SharingEnabled: true,
 			},
 		},
@@ -216,7 +216,7 @@ func TestAMDGPUSharingMemoryLimits(t *testing.T) {
 		GPURequest: &types.GPURequest{
 			Fraction:       1.0,
 			MemoryRequest:  16384, // 16GB (more than our 8GB default)
-			IsolationType:  types.GPUIsolationMPS,
+			IsolationType:  types.GPUIsolationTimeSlicing,
 			SharingEnabled: true,
 		},
 	}
@@ -246,7 +246,7 @@ func TestAMDGPUSharingCapabilities(t *testing.T) {
 		"hardware_partitioning": "advanced_on_mi300x",
 		"time_slicing":          true,
 		"memory_management":     true,
-		"mps_support":           true,
+		"time_slicing_support":           true,
 		"fractional_allocation": "hardware_on_mi300x",
 		"isolation":             "srivov_on_mi300x",
 	}

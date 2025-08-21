@@ -255,7 +255,7 @@ func GetAMDGPUSharingCapabilities() map[string]interface{} {
 		"hardware_partitioning": "advanced_on_mi300x", // Advanced partitioning on MI300X, basic on other Instinct
 		"time_slicing":          true,
 		"memory_management":     true,
-		"mps_support":           true,
+		"time_slicing_support":  true,
 		"fractional_allocation": "hardware_on_mi300x", // Hardware-level XCD fractions on MI300X
 		"isolation":             "srivov_on_mi300x",   // SR-IOV isolation on MI300X
 		"max_concurrent":        "8_xcds_on_mi300x",   // 8 XCDs per MI300X

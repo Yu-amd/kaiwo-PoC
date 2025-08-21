@@ -305,7 +305,7 @@ func ValidateGPUManagerConfig(config *GPUManagerConfig) error {
 
 	for _, isolationType := range config.AllowedIsolationTypes {
 		switch isolationType {
-		case types.GPUIsolationMPS, types.GPUIsolationMIG, types.GPUIsolationNone:
+		case types.GPUIsolationTimeSlicing, types.GPUIsolationMIG, types.GPUIsolationNone:
 			// Valid isolation type
 		default:
 			return fmt.Errorf("invalid isolation type: %s", isolationType)

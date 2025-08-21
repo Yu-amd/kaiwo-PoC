@@ -32,7 +32,7 @@ func TestAMDGPUManager(t *testing.T) {
 		EnableSharing:         true,
 		MaxFraction:           1.0,
 		MinFraction:           0.1,
-		AllowedIsolationTypes: []types.GPUIsolationType{types.GPUIsolationMPS, types.GPUIsolationNone},
+		AllowedIsolationTypes: []types.GPUIsolationType{types.GPUIsolationTimeSlicing, types.GPUIsolationNone},
 	}
 
 	// Create AMD GPU manager
@@ -81,7 +81,7 @@ func TestAMDGPUManager(t *testing.T) {
 		GPURequest: &types.GPURequest{
 			Fraction:       0.5,
 			MemoryRequest:  512, // 512MB - reasonable for the available GPU memory
-			IsolationType:  types.GPUIsolationMPS,
+			IsolationType:  types.GPUIsolationTimeSlicing,
 			SharingEnabled: true,
 			Priority:       0,
 		},
@@ -191,7 +191,7 @@ func TestFractionalAllocator(t *testing.T) {
 		GPURequest: &types.GPURequest{
 			Fraction:       0.5,
 			MemoryRequest:  4000, // 4GB
-			IsolationType:  types.GPUIsolationMPS,
+			IsolationType:  types.GPUIsolationTimeSlicing,
 			SharingEnabled: true,
 			Priority:       0,
 		},
@@ -279,7 +279,7 @@ func TestGPUManagerFactory(t *testing.T) {
 		EnableSharing:         true,
 		MaxFraction:           1.0,
 		MinFraction:           0.1,
-		AllowedIsolationTypes: []types.GPUIsolationType{types.GPUIsolationMPS, types.GPUIsolationNone},
+		AllowedIsolationTypes: []types.GPUIsolationType{types.GPUIsolationTimeSlicing, types.GPUIsolationNone},
 	}
 
 	manager, err := factory.CreateManager(config)
@@ -312,7 +312,7 @@ func TestGPUManagerConfigValidation(t *testing.T) {
 		EnableSharing:         true,
 		MaxFraction:           1.0,
 		MinFraction:           0.1,
-		AllowedIsolationTypes: []types.GPUIsolationType{types.GPUIsolationMPS, types.GPUIsolationNone},
+		AllowedIsolationTypes: []types.GPUIsolationType{types.GPUIsolationTimeSlicing, types.GPUIsolationNone},
 	}
 
 	if err := ValidateGPUManagerConfig(validConfig); err != nil {

@@ -78,7 +78,7 @@ func TestCreateReservation(t *testing.T) {
 		Duration:       2 * time.Hour,
 		Priority:       ReservationPriorityNormal,
 		Annotations:    map[string]string{"test": "value"},
-		IsolationType:  "mps",
+		IsolationType:  "time-slicing",
 		SharingEnabled: true,
 	}
 
@@ -119,8 +119,8 @@ func TestCreateReservation(t *testing.T) {
 		t.Errorf("Expected status 'pending', got %s", reservation.Status)
 	}
 
-	if reservation.IsolationType != "mps" {
-		t.Errorf("Expected isolation type 'mps', got %s", reservation.IsolationType)
+	if reservation.IsolationType != "time-slicing" {
+		t.Errorf("Expected isolation type 'time-slicing', got %s", reservation.IsolationType)
 	}
 
 	if !reservation.SharingEnabled {

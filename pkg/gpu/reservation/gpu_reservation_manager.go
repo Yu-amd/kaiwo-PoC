@@ -45,7 +45,7 @@ type GPUReservation struct {
 	CreatedAt       time.Time
 	UpdatedAt       time.Time
 	Annotations     map[string]string
-	IsolationType   string // "mps", "none"
+	IsolationType   string // "time-slicing", "none"
 	SharingEnabled  bool
 }
 

@@ -18,7 +18,6 @@ import (
 	"fmt"
 	"strconv"
 	"strings"
-	"time"
 
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
@@ -37,7 +36,7 @@ const (
 type GPUIsolationType string
 
 const (
-	GPUIsolationMPS  GPUIsolationType = "mps"  // Multi-Process Service
+	GPUIsolationTimeSlicing GPUIsolationType = "time-slicing"  // Time-slicing for AMD GPUs
 	GPUIsolationMIG  GPUIsolationType = "mig"  // Multi-Instance GPU (NVIDIA)
 	GPUIsolationNone GPUIsolationType = "none" // No isolation
 )
@@ -212,7 +211,7 @@ func ParseGPUAnnotations(pod *corev1.Pod, containerName string) (*GPUAnnotations
 	if isolationStr, exists := pod.Annotations["kaiwo.ai/gpu-isolation"]; exists {
 		isolation := GPUIsolationType(strings.ToLower(isolationStr))
 		switch isolation {
-		case GPUIsolationMPS, GPUIsolationMIG, GPUIsolationNone:
+		case GPUIsolationTimeSlicing, GPUIsolationMIG, GPUIsolationNone:
 			annotations.IsolationType = &isolation
 		default:
 			return nil, fmt.Errorf("invalid gpu-isolation annotation: %s", isolationStr)
@@ -352,34 +351,7 @@ type GPUStats struct {
 	ActiveAllocations int `json:"activeAllocations"`
 }
 
-// MPSConnectionInfo contains connection information for MPS
-type MPSConnectionInfo struct {
-	GPUID     string    `json:"gpu_id"`
-	Port      int       `json:"port"`
-	Host      string    `json:"host"`
-	Protocol  string    `json:"protocol"`
-	Status    string    `json:"status"`
-	StartTime time.Time `json:"start_time"`
-}
 
-// MPSStats contains statistics about MPS usage
-type MPSStats struct {
-	TotalServers    int                           `json:"total_servers"`
-	RunningServers  int                           `json:"running_servers"`
-	StoppedServers  int                           `json:"stopped_servers"`
-	ErrorServers    int                           `json:"error_servers"`
-	StartingServers int                           `json:"starting_servers"`
-	ServerDetails   map[string]MPSServerStats     `json:"server_details"`
-}
-
-// MPSServerStats contains statistics for a specific MPS server
-type MPSServerStats struct {
-	ID        string        `json:"id"`
-	Status    string        `json:"status"`
-	Port      int           `json:"port"`
-	StartTime time.Time     `json:"start_time"`
-	Uptime    time.Duration `json:"uptime"`
-}
 
 // ReservationStats contains statistics about GPU reservations
 type ReservationStats struct {
