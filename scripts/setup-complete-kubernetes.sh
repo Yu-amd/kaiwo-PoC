@@ -40,10 +40,10 @@ print_header() {
 }
 
 # Check if running as root
-if [[ $EUID -eq 0 ]]; then
-   print_error "This script should not be run as root. Please run as a regular user with sudo privileges."
-   exit 1
-fi
+#if [[ $EUID -eq 0 ]]; then
+#   print_error "This script should not be run as root. Please run as a regular user with sudo privileges."
+#   exit 1
+#fi
 
 # Check if we're on the right system
 if [[ "$OSTYPE" != "linux-gnu"* ]]; then
@@ -186,34 +186,73 @@ else
     print_success "Helm already installed"
 fi
 
-# Install k3s (lightweight Kubernetes)
-print_step "Installing k3s (lightweight Kubernetes)..."
-if ! command -v k3s &> /dev/null; then
-    curl -sfL https://get.k3s.io | sh -s -- --write-kubeconfig-mode 644
-    print_success "k3s installed"
+# Install vanilla Kubernetes using kubeadm
+print_step "Installing vanilla Kubernetes using kubeadm..."
+
+# Disable swap (required for kubelet)
+print_status "Disabling swap..."
+sudo swapoff -a
+sudo sed -i '/ swap / s/^\(.*\)$/#\1/g' /etc/fstab
+
+# Install Kubernetes components
+if ! command -v kubeadm &> /dev/null; then
+    # Add Kubernetes repository
+    curl -fsSL https://pkgs.k8s.io/core:/stable:/v1.29/deb/Release.key | sudo gpg --dearmor -o /etc/apt/keyrings/kubernetes-apt-keyring.gpg
+    echo 'deb [signed-by=/etc/apt/keyrings/kubernetes-apt-keyring.gpg] https://pkgs.k8s.io/core:/stable:/v1.29/deb/ /' | sudo tee /etc/apt/sources.list.d/kubernetes.list
+    
+    # Install Kubernetes components
+    sudo apt update
+    sudo apt install -y kubelet kubeadm kubectl
+    sudo apt-mark hold kubelet kubeadm kubectl
+    
+    print_success "Kubernetes components installed"
 else
-    print_success "k3s already installed"
+    print_success "Kubernetes components already installed"
 fi
 
-# Wait for k3s to be ready
-print_status "Waiting for k3s to be ready..."
-sleep 30
+# Configure containerd for Kubernetes
+print_status "Configuring containerd..."
+sudo mkdir -p /etc/containerd
+containerd config default | sudo tee /etc/containerd/config.toml
+sudo sed -i 's/SystemdCgroup = false/SystemdCgroup = true/' /etc/containerd/config.toml
+sudo systemctl restart containerd
 
-# Set up kubectl to use k3s
-export KUBECONFIG=/etc/rancher/k3s/k3s.yaml
-sudo chmod 644 /etc/rancher/k3s/k3s.yaml
-
-# Copy kubeconfig to user directory
-mkdir -p ~/.kube
-sudo cp /etc/rancher/k3s/k3s.yaml ~/.kube/config
-sudo chown $USER:$USER ~/.kube/config
-
-# Verify k3s installation
-print_step "Verifying k3s installation..."
-if kubectl get nodes; then
-    print_success "k3s cluster is running"
+# Initialize Kubernetes cluster
+print_step "Initializing Kubernetes cluster..."
+if [ ! -f /etc/kubernetes/admin.conf ]; then
+    # Get the primary IP address
+    PRIMARY_IP=$(ip route get 1 | awk '{print $7; exit}')
+    
+    # Initialize the cluster
+    sudo kubeadm init --pod-network-cidr=10.244.0.0/16 --apiserver-advertise-address=$PRIMARY_IP
+    
+    # Set up kubectl for the current user
+    mkdir -p ~/.kube
+    sudo cp /etc/kubernetes/admin.conf ~/.kube/config
+    sudo chown $USER:$USER ~/.kube/config
+    
+    print_success "Kubernetes cluster initialized"
 else
-    print_error "k3s cluster is not running properly"
+    print_success "Kubernetes cluster already initialized"
+    
+    # Set up kubectl for the current user if not already done
+    if [ ! -f ~/.kube/config ]; then
+        mkdir -p ~/.kube
+        sudo cp /etc/kubernetes/admin.conf ~/.kube/config
+        sudo chown $USER:$USER ~/.kube/config
+    fi
+fi
+
+# Wait for Kubernetes to be ready
+print_status "Waiting for Kubernetes to be ready..."
+sleep 60
+
+# Verify Kubernetes installation
+print_step "Verifying Kubernetes installation..."
+if kubectl get nodes; then
+    print_success "Kubernetes cluster is running"
+else
+    print_error "Kubernetes cluster is not running properly"
     exit 1
 fi
 
@@ -224,7 +263,12 @@ print_success "Flannel CNI installed"
 
 # Wait for CNI to be ready
 print_status "Waiting for CNI to be ready..."
-sleep 30
+sleep 60
+
+# Remove taint from master node to allow scheduling
+print_status "Configuring master node for single-node cluster..."
+kubectl taint nodes --all node-role.kubernetes.io/control-plane-
+kubectl taint nodes --all node-role.kubernetes.io/master-
 
 # Install AMD GPU drivers (if AMD GPUs are present)
 if [ "$GPU_COUNT" -gt 0 ]; then
@@ -351,7 +395,7 @@ GPU Resources:
 $(kubectl get nodes -o json | jq '.items[].status.allocatable | keys | .[] | select(contains("amd.com/gpu"))' 2>/dev/null || echo "No GPU resources detected")
 
 Installed Components:
-- k3s (Kubernetes)
+- Vanilla Kubernetes (kubeadm)
 - Docker
 - kubectl
 - Helm
@@ -419,7 +463,7 @@ print_success "Your Kaiwo-PoC Kubernetes development environment is ready!"
 
 echo
 print_status "What's been installed:"
-echo "  ✅ k3s (lightweight Kubernetes cluster)"
+echo "  ✅ Vanilla Kubernetes (production-ready cluster)"
 echo "  ✅ Docker (container runtime)"
 echo "  ✅ kubectl (Kubernetes CLI)"
 echo "  ✅ Helm (package manager)"
