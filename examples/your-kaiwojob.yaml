@@ -1,0 +1,353 @@
+# =============================================================================
+# KaiwoJob Examples - Complete Guide
+# =============================================================================
+# This file contains multiple examples of KaiwoJob configurations
+# that work with the Kaiwo scheduler and Phase 1 components
+# =============================================================================
+
+---
+# Example 1: Simple CPU-only Job
+apiVersion: kaiwo.silogen.ai/v1alpha1
+kind: KaiwoJob
+metadata:
+  name: simple-cpu-job
+spec:
+  user: developer@company.com
+  gpus: 0  # No GPU required
+  resources:
+    limits:
+      cpu: 2
+      memory: 4Gi
+    requests:
+      cpu: 1
+      memory: 2Gi
+  job:
+    apiVersion: batch/v1
+    kind: Job
+    spec:
+      template:
+        spec:
+          containers:
+          - name: cpu-worker
+            image: busybox:latest
+            command: ["sleep"]
+            args: ["60"]
+          restartPolicy: Never
+
+---
+# Example 2: AMD GPU Job with Fractional Allocation
+apiVersion: kaiwo.silogen.ai/v1alpha1
+kind: KaiwoJob
+metadata:
+  name: amd-gpu-fractional-job
+  annotations:
+    kaiwo.ai/gpu-fraction: "0.5"        # Use 50% of a GPU
+    kaiwo.ai/gpu-memory: "4000"         # Request 4GB GPU memory
+    kaiwo.ai/gpu-sharing: "true"        # Enable GPU sharing
+    kaiwo.ai/gpu-isolation: "time-slicing"  # AMD time-slicing
+spec:
+  user: researcher@amd.com
+  gpus: 1
+  gpuVendor: amd
+  resources:
+    limits:
+      cpu: 4
+      memory: 8Gi
+    requests:
+      cpu: 2
+      memory: 4Gi
+  job:
+    apiVersion: batch/v1
+    kind: Job
+    spec:
+      template:
+        spec:
+          containers:
+          - name: gpu-worker
+            image: amd/pytorch:rocm5.6
+            command: ["python"]
+            args: ["-c", "import torch; print('AMD GPU available:', torch.cuda.is_available()); print('GPU count:', torch.cuda.device_count())"]
+            env:
+            - name: CUDA_VISIBLE_DEVICES
+              value: "0"
+          restartPolicy: Never
+
+---
+# Example 3: Multi-GPU Training Job
+apiVersion: kaiwo.silogen.ai/v1alpha1
+kind: KaiwoJob
+metadata:
+  name: multi-gpu-training-job
+  annotations:
+    kaiwo.ai/gpu-fraction: "1.0"        # Full GPU allocation
+    kaiwo.ai/gpu-memory: "8000"         # Request 8GB GPU memory
+spec:
+  user: ml-engineer@company.com
+  gpus: 2
+  gpuVendor: amd
+  resources:
+    limits:
+      cpu: 8
+      memory: 16Gi
+    requests:
+      cpu: 4
+      memory: 8Gi
+  job:
+    apiVersion: batch/v1
+    kind: Job
+    spec:
+      template:
+        spec:
+          containers:
+          - name: training-worker
+            image: amd/pytorch:rocm5.6
+            command: ["python"]
+            args: ["train.py", "--epochs", "100", "--batch-size", "32"]
+            env:
+            - name: CUDA_VISIBLE_DEVICES
+              value: "0,1"
+            - name: MASTER_ADDR
+              value: "localhost"
+            - name: MASTER_PORT
+              value: "12355"
+          restartPolicy: Never
+
+---
+# Example 4: Job with Storage and Data Download
+apiVersion: kaiwo.silogen.ai/v1alpha1
+kind: KaiwoJob
+metadata:
+  name: data-processing-job
+spec:
+  user: data-scientist@company.com
+  gpus: 1
+  gpuVendor: amd
+  resources:
+    limits:
+      cpu: 4
+      memory: 8Gi
+    requests:
+      cpu: 2
+      memory: 4Gi
+  storage:
+    storageEnabled: true
+    storageClassName: "standard"
+    accessMode: "ReadWriteOnce"
+    data:
+      storageSize: "10Gi"
+      mountPath: "/data"
+      download:
+        s3:
+        - endpointUrl:
+            secretName: s3-secret
+            secretKey: endpoint
+          accessKeyId:
+            secretName: s3-secret
+            secretKey: access_key_id
+          secretKey:
+            secretName: s3-secret
+            secretKey: secret_key
+          buckets:
+          - name: datasets
+            files:
+            - path: model.pt
+              targetPath: /data/model.pt
+            folders:
+            - path: training_data
+              targetPath: /data/training_data
+    huggingFace:
+      storageSize: "5Gi"
+      mountPath: "/hf_cache"
+      preCacheRepos:
+      - repoId: bert-base-uncased
+        files:
+        - "config.json"
+        - "pytorch_model.bin"
+  job:
+    apiVersion: batch/v1
+    kind: Job
+    spec:
+      template:
+        spec:
+          containers:
+          - name: data-processor
+            image: amd/pytorch:rocm5.6
+            command: ["python"]
+            args: ["process_data.py", "--input", "/data", "--output", "/data/processed"]
+            volumeMounts:
+            - name: data-volume
+              mountPath: /data
+          volumes:
+          - name: data-volume
+            persistentVolumeClaim:
+              claimName: data-pvc
+          restartPolicy: Never
+
+---
+# Example 5: Ray Job for Distributed Computing
+apiVersion: kaiwo.silogen.ai/v1alpha1
+kind: KaiwoJob
+metadata:
+  name: ray-distributed-job
+spec:
+  user: distributed-computing@company.com
+  gpus: 4
+  gpuVendor: amd
+  resources:
+    limits:
+      cpu: 16
+      memory: 32Gi
+    requests:
+      cpu: 8
+      memory: 16Gi
+  rayJob:
+    apiVersion: ray.io/v1
+    kind: RayJob
+    spec:
+      entrypoint: |
+        import ray
+        import time
+        
+        @ray.remote(num_gpus=1)
+        def gpu_task():
+            import torch
+            print(f"GPU available: {torch.cuda.is_available()}")
+            print(f"GPU count: {torch.cuda.device_count()}")
+            time.sleep(10)
+            return "GPU task completed"
+        
+        ray.init()
+        results = ray.get([gpu_task.remote() for _ in range(4)])
+        print("All tasks completed:", results)
+      runtimeEnv:
+        pip:
+          - torch
+          - ray[default]
+      clusterSpec:
+        headGroupSpec:
+          serviceType: NodePort
+          replicas: 1
+          rayStartParams:
+            dashboard-host: "0.0.0.0"
+          template:
+            spec:
+              containers:
+              - name: ray-head
+                image: rayproject/ray:latest
+                resources:
+                  limits:
+                    cpu: "4"
+                    memory: "8Gi"
+                    amd.com/gpu: "1"
+                  requests:
+                    cpu: "2"
+                    memory: "4Gi"
+                    amd.com/gpu: "1"
+        workerGroupSpecs:
+        - replicas: 3
+          rayStartParams: {}
+          template:
+            spec:
+              containers:
+              - name: ray-worker
+                image: rayproject/ray:latest
+                resources:
+                  limits:
+                    cpu: "4"
+                    memory: "8Gi"
+                    amd.com/gpu: "1"
+                  requests:
+                    cpu: "2"
+                    memory: "4Gi"
+                    amd.com/gpu: "1"
+
+---
+# Example 6: High Priority Job with Queue Management
+apiVersion: kaiwo.silogen.ai/v1alpha1
+kind: KaiwoJob
+metadata:
+  name: high-priority-research-job
+  labels:
+    kueue.x-k8s.io/queue-name: research-queue
+    kaiwo.silogen.ai/priority: high
+spec:
+  user: senior-researcher@company.com
+  gpus: 1
+  gpuVendor: amd
+  workloadPriorityClass: high
+  resources:
+    limits:
+      cpu: 4
+      memory: 8Gi
+    requests:
+      cpu: 2
+      memory: 4Gi
+  job:
+    apiVersion: batch/v1
+    kind: Job
+    spec:
+      template:
+        spec:
+          containers:
+          - name: research-worker
+            image: amd/pytorch:rocm5.6
+            command: ["python"]
+            args: ["research_experiment.py", "--priority", "high"]
+          restartPolicy: Never
+
+---
+# Example 7: Job with Custom Pod Template Labels
+apiVersion: kaiwo.silogen.ai/v1alpha1
+kind: KaiwoJob
+metadata:
+  name: custom-labels-job
+spec:
+  user: developer@company.com
+  gpus: 0
+  podTemplateSpecLabels:
+    app: custom-app
+    environment: production
+    team: ml-team
+  resources:
+    limits:
+      cpu: 2
+      memory: 4Gi
+    requests:
+      cpu: 1
+      memory: 2Gi
+  job:
+    apiVersion: batch/v1
+    kind: Job
+    spec:
+      template:
+        spec:
+          containers:
+          - name: custom-worker
+            image: nginx:latest
+            command: ["nginx"]
+            args: ["-g", "daemon off;"]
+          restartPolicy: Never
+
+# =============================================================================
+# Usage Instructions:
+# =============================================================================
+# 1. Choose the example that fits your use case
+# 2. Modify the fields as needed:
+#    - user: Your email address
+#    - gpus: Number of GPUs needed (0 for CPU-only)
+#    - gpuVendor: "amd" for AMD GPUs
+#    - resources: CPU and memory requirements
+#    - image: Container image to use
+#    - command/args: What to run
+#
+# 3. Apply the job:
+#    kubectl apply -f your-kaiwojob.yaml
+#
+# 4. Monitor the job:
+#    kubectl get kaiwojobs
+#    kubectl describe kaiwojob <job-name>
+#
+# 5. Check scheduler usage:
+#    kubectl get job <job-name> -o jsonpath='{.spec.template.spec.schedulerName}'
+#    # Should show: kaiwo-scheduler
+# =============================================================================

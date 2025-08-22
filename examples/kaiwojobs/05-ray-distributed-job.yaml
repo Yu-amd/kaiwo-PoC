@@ -1,0 +1,34 @@
+# =============================================================================
+# Example 5: Ray Distributed Job
+# =============================================================================
+# This example demonstrates Ray distributed computing.
+# Shows Phase 1 features: distributed GPU workloads.
+# Note: This is a simplified example due to CRD limitations.
+# =============================================================================
+
+apiVersion: kaiwo.silogen.ai/v1alpha1
+kind: KaiwoJob
+metadata:
+  name: ray-distributed-job
+spec:
+  template:
+    spec:
+      containers:
+      - name: ray-worker
+        image: rayproject/ray:latest
+        resources:
+          requests:
+            cpu: 8
+            memory: 16Gi
+            amd.com/gpu: 4
+          limits:
+            cpu: 16
+            memory: 32Gi
+            amd.com/gpu: 4
+
+# =============================================================================
+# Usage:
+# kubectl apply -f examples/kaiwojobs/05-ray-distributed-job.yaml
+# kubectl get kaiwojobs
+# kubectl describe kaiwojob ray-distributed-job
+# =============================================================================

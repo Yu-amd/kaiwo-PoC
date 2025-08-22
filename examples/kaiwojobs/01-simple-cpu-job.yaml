@@ -1,0 +1,31 @@
+# =============================================================================
+# Example 1: Simple CPU-only Job
+# =============================================================================
+# This example shows a basic CPU workload without GPU requirements.
+# Good for data processing, web services, batch jobs, etc.
+# =============================================================================
+
+apiVersion: kaiwo.silogen.ai/v1alpha1
+kind: KaiwoJob
+metadata:
+  name: simple-cpu-job
+spec:
+  template:
+    spec:
+      containers:
+      - name: cpu-worker
+        image: busybox:latest
+        resources:
+          requests:
+            cpu: 1
+            memory: 2Gi
+          limits:
+            cpu: 2
+            memory: 4Gi
+
+# =============================================================================
+# Usage:
+# kubectl apply -f examples/kaiwojobs/01-simple-cpu-job.yaml
+# kubectl get kaiwojobs
+# kubectl describe kaiwojob simple-cpu-job
+# =============================================================================

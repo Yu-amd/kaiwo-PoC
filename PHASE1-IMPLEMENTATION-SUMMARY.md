@@ -29,7 +29,7 @@ annotations:
   kaiwo.ai/gpu-fraction: "0.5"        # Fractional GPU allocation
   kaiwo.ai/gpu-memory: "4000"         # Memory-based allocation (MiB)
   kaiwo.ai/gpu-sharing: "true"        # Enable GPU sharing
-  kaiwo.ai/gpu-isolation: "mps"       # MPS support for AMD GPUs
+  kaiwo.ai/gpu-isolation: "time-slicing"  # Time-slicing for AMD GPUs
 ```
 
 #### **AMD GPU Optimization** **FULLY IMPLEMENTED**
@@ -203,7 +203,7 @@ Kaiwo-PoC Core
 ### **Advanced GPU Management Features**
 1. **Fractional GPU allocation** with 0.1 to 1.0 support
 2. **Memory-based GPU requests** with MiB precision
-3. **AMD-specific MPS support** with time-slicing
+3. **AMD-specific time-slicing support** for GPU sharing
 4. **GPU reservation system** with expiration management
 5. **MI300X chiplet optimization** with SPX/CPX modes
 

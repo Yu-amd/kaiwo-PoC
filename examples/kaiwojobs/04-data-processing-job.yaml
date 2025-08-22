@@ -1,0 +1,34 @@
+# =============================================================================
+# Example 4: Data Processing Job
+# =============================================================================
+# This example demonstrates data processing workload.
+# Shows Phase 1 features: resource management.
+# Note: This is a simplified example due to CRD limitations.
+# =============================================================================
+
+apiVersion: kaiwo.silogen.ai/v1alpha1
+kind: KaiwoJob
+metadata:
+  name: data-processing-job
+spec:
+  template:
+    spec:
+      containers:
+      - name: data-processor
+        image: amd/pytorch:rocm5.6
+        resources:
+          requests:
+            cpu: 2
+            memory: 4Gi
+            amd.com/gpu: 1
+          limits:
+            cpu: 4
+            memory: 8Gi
+            amd.com/gpu: 1
+
+# =============================================================================
+# Usage:
+# kubectl apply -f examples/kaiwojobs/04-data-processing-job.yaml
+# kubectl get kaiwojobs
+# kubectl describe kaiwojob data-processing-job
+# =============================================================================

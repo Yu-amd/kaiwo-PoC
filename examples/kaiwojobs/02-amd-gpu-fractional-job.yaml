@@ -1,0 +1,39 @@
+# =============================================================================
+# Example 2: AMD GPU Job with Fractional Allocation
+# =============================================================================
+# This example demonstrates AMD GPU fractional allocation and time-slicing.
+# Shows Phase 1 features: GPU sharing, fractional allocation, AMD optimization.
+# Note: This is a simplified example due to CRD limitations.
+# =============================================================================
+
+apiVersion: kaiwo.silogen.ai/v1alpha1
+kind: KaiwoJob
+metadata:
+  name: amd-gpu-fractional-job
+  annotations:
+    kaiwo.ai/gpu-fraction: "0.5"        # Use 50% of a GPU
+    kaiwo.ai/gpu-memory: "4000"         # Request 4GB GPU memory
+    kaiwo.ai/gpu-sharing: "true"        # Enable GPU sharing
+    kaiwo.ai/gpu-isolation: "time-slicing"  # AMD time-slicing
+spec:
+  template:
+    spec:
+      containers:
+      - name: gpu-worker
+        image: amd/pytorch:rocm5.6
+        resources:
+          requests:
+            cpu: 2
+            memory: 4Gi
+            amd.com/gpu: 1
+          limits:
+            cpu: 4
+            memory: 8Gi
+            amd.com/gpu: 1
+
+# =============================================================================
+# Usage:
+# kubectl apply -f examples/kaiwojobs/02-amd-gpu-fractional-job.yaml
+# kubectl get kaiwojobs
+# kubectl logs job/amd-gpu-fractional-job
+# =============================================================================

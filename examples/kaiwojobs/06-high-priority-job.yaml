@@ -1,0 +1,38 @@
+# =============================================================================
+# Example 6: High Priority Job
+# =============================================================================
+# This example demonstrates high priority workload.
+# Shows Phase 1 features: priority scheduling.
+# Note: This is a simplified example due to CRD limitations.
+# =============================================================================
+
+apiVersion: kaiwo.silogen.ai/v1alpha1
+kind: KaiwoJob
+metadata:
+  name: high-priority-research-job
+  labels:
+    kueue.x-k8s.io/queue-name: research-queue
+    kaiwo.silogen.ai/priority: high
+spec:
+  template:
+    spec:
+      containers:
+      - name: research-worker
+        image: amd/pytorch:rocm5.6
+        resources:
+          requests:
+            cpu: 2
+            memory: 4Gi
+            amd.com/gpu: 1
+          limits:
+            cpu: 4
+            memory: 8Gi
+            amd.com/gpu: 1
+
+# =============================================================================
+# Usage:
+# kubectl apply -f examples/kaiwojobs/06-high-priority-job.yaml
+# kubectl get kaiwojobs
+# kubectl get clusterqueues
+# kubectl get localqueues
+# =============================================================================

@@ -1,0 +1,37 @@
+# =============================================================================
+# Example 7: Custom Labels Job
+# =============================================================================
+# This example demonstrates custom labeling.
+# Shows Phase 1 features: custom labeling.
+# Note: This is a simplified example due to CRD limitations.
+# =============================================================================
+
+apiVersion: kaiwo.silogen.ai/v1alpha1
+kind: KaiwoJob
+metadata:
+  name: custom-labels-job
+  labels:
+    app: custom-app
+    environment: production
+    team: ml-team
+    version: v1.0.0
+spec:
+  template:
+    spec:
+      containers:
+      - name: custom-worker
+        image: nginx:latest
+        resources:
+          requests:
+            cpu: 1
+            memory: 2Gi
+          limits:
+            cpu: 2
+            memory: 4Gi
+
+# =============================================================================
+# Usage:
+# kubectl apply -f examples/kaiwojobs/07-custom-labels-job.yaml
+# kubectl get kaiwojobs
+# kubectl get pods --show-labels | grep custom-labels-job
+# =============================================================================
