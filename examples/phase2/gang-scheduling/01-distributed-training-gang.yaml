@@ -1,0 +1,57 @@
+apiVersion: kaiwo.silogen.ai/v1alpha1
+kind: KaiwoJob
+metadata:
+  name: distributed-pytorch-training
+  namespace: default
+  labels:
+    app: distributed-training
+    framework: pytorch
+    phase: phase2-demo
+spec:
+  # Gang Scheduling Configuration
+  gangScheduling:
+    enabled: true
+    minMembers: 4        # Requires exactly 4 workers for distributed training
+    timeout: "10m"       # Wait up to 10 minutes for all workers to be scheduled
+    policy: "strict"     # All-or-nothing scheduling
+    resourceReservation: true  # Reserve resources atomically
+  
+  # Workload Configuration
+  replicas: 4            # Must match gangScheduling.minMembers
+  gpus: 4                # 1 GPU per replica (total 4 GPUs)
+  gpuVendor: amd
+  gpuModels: ["MI300X"]
+  
+  # Resource Requirements per Worker
+  resources:
+    requests:
+      cpu: "4"
+      memory: "16Gi"
+      amd.com/gpu: "1"
+    limits:
+      cpu: "8"
+      memory: "32Gi"
+      amd.com/gpu: "1"
+  
+  # Distributed Training Configuration
+  template:
+    spec:
+      containers:
+      - name: pytorch-worker
+        image: rocm/pytorch:latest
+        resources:
+          requests:
+            cpu: "4"
+            memory: "16Gi"
+          limits:
+            cpu: "8" 
+            memory: "32Gi"
+  
+  # Priority and Scheduling
+  workloadPriorityClass: "distributed-training-priority"
+  
+  # Annotations for Gang Scheduling
+  podTemplateSpecLabels:
+    kaiwo.ai/gang-scheduling: "enabled"
+    kaiwo.ai/training-type: "distributed"
+    kaiwo.ai/framework: "pytorch"

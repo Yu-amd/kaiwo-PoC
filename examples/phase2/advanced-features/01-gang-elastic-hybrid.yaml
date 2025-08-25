@@ -1,0 +1,93 @@
+apiVersion: kaiwo.silogen.ai/v1alpha1
+kind: KaiwoJob
+metadata:
+  name: hybrid-gang-elastic-training
+  namespace: advanced
+  labels:
+    app: hybrid-training
+    mode: gang-elastic-hybrid
+    phase: phase2-advanced
+spec:
+  # Gang Scheduling for Initial Coordination
+  gangScheduling:
+    enabled: true
+    minMembers: 8        # Start with 8 coordinated workers
+    timeout: "15m"       # Allow time for gang formation
+    policy: "adaptive"   # Allow partial gang if needed
+    resourceReservation: true
+  
+  # Elastic Scaling After Gang Formation
+  elasticScaling:
+    enabled: true
+    minReplicas: 8       # Never go below gang minimum
+    maxReplicas: 32      # Scale up to 32 workers dynamically
+    
+    # Hybrid Scaling Policy
+    scalingPolicy:
+      scaleUpRate: 4     # Moderate scale-up rate
+      scaleDownRate: 2   # Conservative scale-down
+      cooldown: "8m"     # Balanced cooldown
+      stabilizationWindow: "4m"
+    
+    # Advanced Metrics
+    metrics:
+    - type: "custom"
+      metricName: "gang_efficiency"
+      threshold: 75.0    # Scale if gang efficiency < 75%
+    - type: "gpu"
+      threshold: 80.0
+    - type: "custom"
+      metricName: "training_loss_plateau"
+      threshold: 90.0    # Scale up if loss plateaus
+  
+  # Advanced Configuration
+  replicas: 8            # Start with gang minimum
+  gpus: 16               # 2 GPUs per worker initially
+  gpusPerReplica: 2
+  gpuVendor: amd
+  gpuModels: ["MI300X"]
+  
+  # High-Performance Resources
+  resources:
+    requests:
+      cpu: "8"
+      memory: "32Gi"
+      amd.com/gpu: "2"
+    limits:
+      cpu: "16"
+      memory: "64Gi"
+      amd.com/gpu: "2"
+  
+  # Hybrid Training Container
+  template:
+    spec:
+      containers:
+      - name: hybrid-trainer
+        image: rocm/hybrid-training:latest
+        resources:
+          requests:
+            cpu: "8"
+            memory: "32Gi"
+          limits:
+            cpu: "16"
+            memory: "64Gi"
+  
+  # Maximum Priority
+  workloadPriorityClass: "critical-priority"
+  
+  # Resource Profile for Optimization
+  resourceProfile: "distributed-training-optimized"
+  
+  # Extended Training Duration
+  duration: "72h"
+  
+  # Topology Requirements
+  preferredTopologyLabel: "topology.kubernetes.io/zone"
+  
+  # Advanced Labels
+  podTemplateSpecLabels:
+    kaiwo.ai/gang-scheduling: "enabled"
+    kaiwo.ai/elastic-scaling: "enabled"
+    kaiwo.ai/workload-type: "hybrid-training"
+    kaiwo.ai/coordination: "gang-then-elastic"
+    kaiwo.ai/resource-profile: "distributed-training-optimized"

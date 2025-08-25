@@ -123,6 +123,20 @@ type CommonMetaSpec struct {
 	// RequiredTopologyLabel specifies the required topology label for scheduling the workload. This is used to ensure that the workload is scheduled on nodes that match the specified topology label.
 	RequiredTopologyLabel string `json:"requiredTopologyLabel,omitempty"`
 
+	// GangScheduling configures gang scheduling for distributed workloads. When enabled, all replicas of the workload
+	// must be scheduled together as an atomic unit. This is essential for distributed training jobs that require
+	// all workers to be available simultaneously.
+	GangScheduling *GangSchedulingSpec `json:"gangScheduling,omitempty"`
+
+	// ElasticScaling configures elastic scaling for the workload. When enabled, the workload can dynamically
+	// scale the number of replicas based on resource utilization metrics and custom scaling policies.
+	ElasticScaling *ElasticScalingSpec `json:"elasticScaling,omitempty"`
+
+	// ResourceProfile specifies a predefined resource profile to use for the workload.
+	// Resource profiles provide optimized resource configurations for specific workload types
+	// (e.g., "distributed-training", "inference", "data-processing").
+	ResourceProfile string `json:"resourceProfile,omitempty"`
+
 	// Resources specify the default resource requirements applied for all pods inside the workflow.
 	//
 	// This field defines default Kubernetes `ResourceRequirements` (requests and limits for CPU,
@@ -482,4 +496,78 @@ type SecretVolume struct {
 
 	// MountPath defines the directory path inside the container where the secret volume (or the `SubPath` file) should be mounted.
 	MountPath string `json:"mountPath,omitempty"`
+}
+
+// GangSchedulingSpec defines the configuration for gang scheduling
+type GangSchedulingSpec struct {
+	// Enabled indicates whether gang scheduling is enabled for this workload
+	Enabled bool `json:"enabled,omitempty"`
+
+	// MinMembers specifies the minimum number of replicas that must be scheduled together
+	// This is typically the same as the replicas count for distributed training
+	MinMembers int `json:"minMembers,omitempty"`
+
+	// Timeout specifies the maximum time to wait for all gang members to be scheduled
+	// If not specified, defaults to 10 minutes
+	Timeout *metav1.Duration `json:"timeout,omitempty"`
+
+	// Policy defines the gang scheduling policy (strict, best-effort, adaptive)
+	// +kubebuilder:default=strict
+	Policy string `json:"policy,omitempty"`
+
+	// ResourceReservation enables resource reservation for gang members to ensure atomicity
+	// +kubebuilder:default=true
+	ResourceReservation bool `json:"resourceReservation,omitempty"`
+}
+
+// ElasticScalingSpec defines the configuration for elastic scaling
+type ElasticScalingSpec struct {
+	// Enabled indicates whether elastic scaling is enabled for this workload
+	Enabled bool `json:"enabled,omitempty"`
+
+	// MinReplicas is the minimum number of replicas for elastic scaling
+	MinReplicas int `json:"minReplicas,omitempty"`
+
+	// MaxReplicas is the maximum number of replicas for elastic scaling
+	MaxReplicas int `json:"maxReplicas,omitempty"`
+
+	// ScalingPolicy defines how the workload should scale
+	ScalingPolicy *ScalingPolicySpec `json:"scalingPolicy,omitempty"`
+
+	// Metrics defines the metrics to use for scaling decisions
+	Metrics []ScalingMetricSpec `json:"metrics,omitempty"`
+}
+
+// ScalingPolicySpec defines the scaling policy for elastic workloads
+type ScalingPolicySpec struct {
+	// ScaleUpRate defines how quickly to scale up (replicas per minute)
+	// +kubebuilder:default=2
+	ScaleUpRate int `json:"scaleUpRate,omitempty"`
+
+	// ScaleDownRate defines how quickly to scale down (replicas per minute)
+	// +kubebuilder:default=1
+	ScaleDownRate int `json:"scaleDownRate,omitempty"`
+
+	// Cooldown defines the minimum time between scaling operations
+	// +kubebuilder:default="5m"
+	Cooldown *metav1.Duration `json:"cooldown,omitempty"`
+
+	// StabilizationWindow defines the window for metric stabilization
+	// +kubebuilder:default="2m"
+	StabilizationWindow *metav1.Duration `json:"stabilizationWindow,omitempty"`
+}
+
+// ScalingMetricSpec defines a metric for elastic scaling
+type ScalingMetricSpec struct {
+	// Type specifies the type of metric (cpu, memory, gpu, custom)
+	Type string `json:"type"`
+
+	// Threshold is the target value for the metric (percentage for resource metrics)
+	Threshold float64 `json:"threshold"`
+
+	// MetricName specifies the name of a custom metric
+	MetricName string `json:"metricName,omitempty"`
+
+	// MetricSelector specifies the selector for a custom metric
+	MetricSelector *metav1.LabelSelector `json:"metricSelector,omitempty"`
 }

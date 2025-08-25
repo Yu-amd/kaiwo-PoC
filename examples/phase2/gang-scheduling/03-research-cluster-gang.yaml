@@ -1,0 +1,63 @@
+apiVersion: kaiwo.silogen.ai/v1alpha1
+kind: KaiwoJob
+metadata:
+  name: research-experiment-cluster
+  namespace: research
+  labels:
+    app: research-experiment
+    experiment-id: "exp-2025-001"
+    phase: phase2-demo
+spec:
+  # Gang Scheduling for Research Cluster
+  gangScheduling:
+    enabled: true
+    minMembers: 6        # Research cluster with 6 coordinated workers
+    timeout: "20m"       # Extended timeout for research setup
+    policy: "adaptive"   # Allow partial scheduling if needed
+    resourceReservation: true
+  
+  # Research Workload Configuration
+  replicas: 6
+  gpus: 12               # 2 GPUs per worker (total 12 GPUs)
+  gpusPerReplica: 2      # Each worker gets 2 GPUs
+  gpuVendor: amd
+  gpuModels: ["MI300X"]
+  
+  # Research-Grade Resources
+  resources:
+    requests:
+      cpu: "12"          # High CPU for data processing
+      memory: "96Gi"     # Large memory for datasets
+      amd.com/gpu: "2"   # 2 GPUs per worker
+    limits:
+      cpu: "24"
+      memory: "192Gi"
+      amd.com/gpu: "2"
+  
+  # Research Container Configuration
+  template:
+    spec:
+      containers:
+      - name: research-worker
+        image: rocm/research:latest
+        resources:
+          requests:
+            cpu: "12"
+            memory: "96Gi"
+          limits:
+            cpu: "24"
+            memory: "192Gi"
+  
+  # Research Priority
+  workloadPriorityClass: "research-priority"
+  
+  # Duration Limit for Experiments
+  duration: "24h"        # Maximum 24 hours for experiment
+  
+  # Research Coordination Labels
+  podTemplateSpecLabels:
+    kaiwo.ai/gang-scheduling: "enabled"
+    kaiwo.ai/workload-type: "research"
+    kaiwo.ai/experiment-type: "distributed-ml"
+    kaiwo.ai/coordination-mode: "adaptive"
+    kaiwo.ai/resource-intensive: "true"

@@ -1,0 +1,76 @@
+apiVersion: kaiwo.silogen.ai/v1alpha1
+kind: KaiwoJob
+metadata:
+  name: batch-processing-elastic
+  namespace: default
+  labels:
+    app: batch-processor
+    workload-type: data-processing
+    phase: phase2-demo
+spec:
+  # Elastic Scaling for Batch Processing
+  elasticScaling:
+    enabled: true
+    minReplicas: 1       # Can scale down to 1 replica during low load
+    maxReplicas: 50      # Scale up to 50 replicas for large batches
+    
+    # Aggressive Scaling Policy for Batch Processing
+    scalingPolicy:
+      scaleUpRate: 10    # Rapid scale-up for batch jobs
+      scaleDownRate: 5   # Moderate scale-down to handle queue variations
+      cooldown: "2m"     # Shorter cooldown for responsive scaling
+      stabilizationWindow: "1m"  # Quick response to load changes
+    
+    # Custom Metrics for Batch Processing
+    metrics:
+    - type: "custom"
+      metricName: "queue_length"
+      threshold: 100.0   # Scale up when queue > 100 items
+    - type: "cpu"
+      threshold: 60.0    # Scale up when CPU > 60%
+    - type: "gpu"
+      threshold: 80.0    # Scale up when GPU > 80%
+  
+  # Initial Configuration
+  replicas: 5            # Start with 5 workers
+  gpus: 5                # 1 GPU per worker
+  gpuVendor: amd
+  gpuModels: ["MI300X"]
+  
+  # Batch Processing Resources
+  resources:
+    requests:
+      cpu: "4"           # Higher CPU for data processing
+      memory: "16Gi"
+      amd.com/gpu: "1"
+    limits:
+      cpu: "8"
+      memory: "32Gi"
+      amd.com/gpu: "1"
+  
+  # Batch Processor Container
+  template:
+    spec:
+      containers:
+      - name: batch-processor
+        image: rocm/batch-processor:latest
+        resources:
+          requests:
+            cpu: "4"
+            memory: "16Gi"
+          limits:
+            cpu: "8"
+            memory: "32Gi"
+  
+  # Batch Processing Priority
+  workloadPriorityClass: "batch-processing-priority"
+  
+  # Duration Limit for Batch Jobs
+  duration: "12h"        # Maximum 12 hours for batch processing
+  
+  # Batch Processing Labels
+  podTemplateSpecLabels:
+    kaiwo.ai/elastic-scaling: "enabled"
+    kaiwo.ai/workload-type: "batch-processing"
+    kaiwo.ai/scaling-strategy: "queue-based"
+    kaiwo.ai/auto-scale: "aggressive"

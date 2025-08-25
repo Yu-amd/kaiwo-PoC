@@ -1,0 +1,77 @@
+apiVersion: kaiwo.silogen.ai/v1alpha1
+kind: KaiwoJob
+metadata:
+  name: adaptive-training-elastic
+  namespace: default
+  labels:
+    app: adaptive-training
+    training-mode: elastic
+    phase: phase2-demo
+spec:
+  # Elastic Scaling for Adaptive Training
+  elasticScaling:
+    enabled: true
+    minReplicas: 4       # Minimum 4 workers for distributed training
+    maxReplicas: 16      # Scale up to 16 workers for faster convergence
+    
+    # Training-Optimized Scaling Policy
+    scalingPolicy:
+      scaleUpRate: 2     # Conservative scale-up for training stability
+      scaleDownRate: 1   # Very conservative scale-down to avoid disruption
+      cooldown: "10m"    # Longer cooldown for training stability
+      stabilizationWindow: "5m"  # Longer stabilization for training metrics
+    
+    # Training-Specific Metrics
+    metrics:
+    - type: "custom"
+      metricName: "training_throughput"
+      threshold: 80.0    # Scale up when throughput efficiency < 80%
+    - type: "gpu"
+      threshold: 85.0    # Scale up when GPU utilization > 85%
+    - type: "custom"
+      metricName: "convergence_rate"
+      threshold: 50.0    # Scale up when convergence is slow
+  
+  # Training Configuration
+  replicas: 8            # Start with 8 workers
+  gpus: 8                # 1 GPU per worker
+  gpuVendor: amd
+  gpuModels: ["MI300X"]
+  
+  # Training Resources
+  resources:
+    requests:
+      cpu: "6"           # High CPU for data loading
+      memory: "24Gi"     # Large memory for model and data
+      amd.com/gpu: "1"
+    limits:
+      cpu: "12"
+      memory: "48Gi"
+      amd.com/gpu: "1"
+  
+  # Training Container
+  template:
+    spec:
+      containers:
+      - name: adaptive-trainer
+        image: rocm/adaptive-training:latest
+        resources:
+          requests:
+            cpu: "6"
+            memory: "24Gi"
+          limits:
+            cpu: "12"
+            memory: "48Gi"
+  
+  # High Priority for Training
+  workloadPriorityClass: "training-high-priority"
+  
+  # Extended Duration for Training
+  duration: "48h"        # Up to 48 hours for long training runs
+  
+  # Training Labels
+  podTemplateSpecLabels:
+    kaiwo.ai/elastic-scaling: "enabled"
+    kaiwo.ai/workload-type: "adaptive-training"
+    kaiwo.ai/scaling-strategy: "performance-based"
+    kaiwo.ai/training-mode: "elastic"

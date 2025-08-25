@@ -1,6 +1,11 @@
 # Kaiwo Examples
 
-This directory contains examples demonstrating the Phase 1 implementation of the Kaiwo project with AMD GPU support.
+This directory contains comprehensive examples demonstrating both **Phase 1** and **Phase 2** implementations of the Kaiwo project with advanced AMD GPU support and intelligent workload management.
+
+## 🎯 **What's Available**
+
+- **Phase 1**: Core Infrastructure Enhancement (Basic KaiwoJobs, GPU Management)
+- **Phase 2**: Advanced Workload Management (Gang Scheduling, Elastic Scaling)
 
 ## 📁 Directory Structure
 
@@ -8,16 +13,32 @@ This directory contains examples demonstrating the Phase 1 implementation of the
 examples/
 ├── README.md                    # This file - comprehensive overview
 ├── your-kaiwojob.yaml          # Combined examples file (legacy)
-└── kaiwojobs/                  # Individual example files
-    ├── README.md               # Detailed kaiwojobs documentation
-    ├── apply-all-examples.sh   # Script to apply all examples
-    ├── 01-simple-cpu-job.yaml
-    ├── 02-amd-gpu-fractional-job.yaml
-    ├── 03-multi-gpu-training-job.yaml
-    ├── 04-data-processing-job.yaml
-    ├── 05-ray-distributed-job.yaml
-    ├── 06-high-priority-job.yaml
-    └── 07-custom-labels-job.yaml
+├── kaiwojobs/                  # Phase 1: Basic KaiwoJob examples
+│   ├── README.md               # Detailed kaiwojobs documentation
+│   ├── apply-all-examples.sh   # Script to apply Phase 1 examples
+│   ├── 01-simple-cpu-job.yaml
+│   ├── 02-amd-gpu-fractional-job.yaml
+│   ├── 03-multi-gpu-training-job.yaml
+│   ├── 04-data-processing-job.yaml
+│   ├── 05-ray-distributed-job.yaml
+│   ├── 06-high-priority-job.yaml
+│   └── 07-custom-labels-job.yaml
+└── phase2/                     # Phase 2: Advanced Workload Management
+    ├── README.md               # Comprehensive Phase 2 documentation
+    ├── apply-all-examples.sh   # Deploy all Phase 2 examples
+    ├── cleanup-all-examples.sh # Clean up all Phase 2 examples
+    ├── gang-scheduling/        # Gang scheduling examples
+    │   ├── 01-distributed-training-gang.yaml
+    │   ├── 02-multi-node-inference-gang.yaml
+    │   └── 03-research-cluster-gang.yaml
+    ├── elastic-scaling/        # Elastic scaling examples
+    │   ├── 01-web-service-elastic.yaml
+    │   ├── 02-batch-processing-elastic.yaml
+    │   └── 03-training-elastic.yaml
+    └── advanced-features/      # Hybrid and advanced examples
+        ├── 01-gang-elastic-hybrid.yaml
+        ├── 02-multi-model-pipeline.yaml
+        └── 03-research-federation.yaml
 ```
 
 ## 🚀 Quick Start
@@ -28,25 +49,69 @@ examples/
 3. **KaiwoJob CRD** is installed
 4. **Kubernetes cluster** is accessible
 
-### Basic Usage
+### Phase 1: Basic Usage
 
 ```bash
-# Navigate to examples directory
+# Navigate to Phase 1 examples
 cd examples/kaiwojobs
 
 # Apply a simple CPU job
 kubectl apply -f 01-simple-cpu-job.yaml
 
-# Apply all examples at once
+# Apply all Phase 1 examples
 ./apply-all-examples.sh
 
 # Check status
 kubectl get kaiwojobs
 ```
 
+### Phase 2: Advanced Workload Management
+
+```bash
+# Navigate to Phase 2 examples  
+cd examples/phase2
+
+# Apply all Phase 2 examples (gang scheduling + elastic scaling)
+./apply-all-examples.sh
+
+# Monitor gang scheduling
+kubectl get kaiwojobs -l kaiwo.ai/gang-scheduling=enabled --all-namespaces
+
+# Monitor elastic scaling
+kubectl get kaiwojobs -l kaiwo.ai/elastic-scaling=enabled --all-namespaces
+
+# Clean up when done
+./cleanup-all-examples.sh
+```
+
+### Quick Feature Demo
+
+```bash
+# Demo gang scheduling for distributed training
+kubectl apply -f phase2/gang-scheduling/01-distributed-training-gang.yaml
+
+# Demo elastic scaling for web service
+kubectl apply -f phase2/elastic-scaling/01-web-service-elastic.yaml
+
+# Demo hybrid gang + elastic scaling
+kubectl apply -f phase2/advanced-features/01-gang-elastic-hybrid.yaml
+```
+
 ## 🧹 Cleanup Instructions
 
-### Quick Cleanup
+### Phase 1 Cleanup
+```bash
+cd examples/kaiwojobs
+./cleanup-examples.sh
+```
+
+### Phase 2 Cleanup
+```bash
+cd examples/phase2
+./cleanup-all-examples.sh
+```
+
+### Complete Cleanup (All Phases)
 
 ```bash
 # Remove all KaiwoJobs at once

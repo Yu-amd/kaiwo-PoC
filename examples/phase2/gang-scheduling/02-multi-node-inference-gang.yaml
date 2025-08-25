@@ -1,0 +1,61 @@
+apiVersion: kaiwo.silogen.ai/v1alpha1
+kind: KaiwoJob
+metadata:
+  name: multi-node-llm-inference
+  namespace: default
+  labels:
+    app: llm-inference
+    model: llama2-70b
+    phase: phase2-demo
+spec:
+  # Gang Scheduling for Large Model Inference
+  gangScheduling:
+    enabled: true
+    minMembers: 8        # Requires 8 nodes for 70B parameter model
+    timeout: "15m"       # Longer timeout for large model loading
+    policy: "strict"     # All nodes must be ready simultaneously
+    resourceReservation: true
+  
+  # Multi-Node Configuration
+  replicas: 8            # 8 inference workers
+  gpus: 8                # 1 GPU per worker
+  gpuVendor: amd
+  gpuModels: ["MI300X"]
+  
+  # High Memory Requirements for Large Models
+  resources:
+    requests:
+      cpu: "8"
+      memory: "64Gi"     # High memory for model loading
+      amd.com/gpu: "1"
+    limits:
+      cpu: "16"
+      memory: "128Gi"
+      amd.com/gpu: "1"
+  
+  # Inference Service Configuration
+  template:
+    spec:
+      containers:
+      - name: llm-inference-worker
+        image: rocm/transformers:latest
+        resources:
+          requests:
+            cpu: "8"
+            memory: "64Gi"
+          limits:
+            cpu: "16"
+            memory: "128Gi"
+  
+  # High Priority for Inference Workloads
+  workloadPriorityClass: "inference-high-priority"
+  
+  # Node Affinity for Gang Members
+  requiredTopologyLabel: "topology.kubernetes.io/zone"
+  
+  # Labels for Gang Coordination
+  podTemplateSpecLabels:
+    kaiwo.ai/gang-scheduling: "enabled"
+    kaiwo.ai/workload-type: "inference"
+    kaiwo.ai/model-size: "70b"
+    kaiwo.ai/coordination: "required"

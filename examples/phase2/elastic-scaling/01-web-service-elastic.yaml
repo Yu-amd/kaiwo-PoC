@@ -1,0 +1,72 @@
+apiVersion: kaiwo.silogen.ai/v1alpha1
+kind: KaiwoJob
+metadata:
+  name: ai-web-service-elastic
+  namespace: default
+  labels:
+    app: ai-web-service
+    service-type: inference-api
+    phase: phase2-demo
+spec:
+  # Elastic Scaling Configuration
+  elasticScaling:
+    enabled: true
+    minReplicas: 2       # Minimum 2 replicas for availability
+    maxReplicas: 20      # Scale up to 20 replicas under load
+    
+    # Scaling Policy
+    scalingPolicy:
+      scaleUpRate: 4     # Add up to 4 replicas per minute
+      scaleDownRate: 2   # Remove up to 2 replicas per minute
+      cooldown: "5m"     # 5-minute cooldown between scaling operations
+      stabilizationWindow: "3m"  # 3-minute window for metric stabilization
+    
+    # Scaling Metrics
+    metrics:
+    - type: "cpu"
+      threshold: 70.0    # Scale up when CPU > 70%
+    - type: "memory" 
+      threshold: 80.0    # Scale up when memory > 80%
+    - type: "gpu"
+      threshold: 75.0    # Scale up when GPU > 75%
+  
+  # Base Configuration
+  replicas: 3            # Initial replica count
+  gpus: 3                # 1 GPU per replica initially
+  gpuVendor: amd
+  gpuModels: ["MI300X"]
+  
+  # Resource Requirements
+  resources:
+    requests:
+      cpu: "2"
+      memory: "8Gi"
+      amd.com/gpu: "1"
+    limits:
+      cpu: "4"
+      memory: "16Gi"
+      amd.com/gpu: "1"
+  
+  # Web Service Container
+  template:
+    spec:
+      containers:
+      - name: ai-inference-api
+        image: rocm/inference-server:latest
+        resources:
+          requests:
+            cpu: "2"
+            memory: "8Gi"
+          limits:
+            cpu: "4"
+            memory: "16Gi"
+  
+  # Service Priority
+  workloadPriorityClass: "web-service-priority"
+  
+  # Elastic Scaling Labels
+  podTemplateSpecLabels:
+    kaiwo.ai/elastic-scaling: "enabled"
+    kaiwo.ai/service-type: "web-api"
+    kaiwo.ai/scaling-strategy: "cpu-memory-gpu"
+    kaiwo.ai/auto-scale: "true"

@@ -1,0 +1,86 @@
+apiVersion: kaiwo.silogen.ai/v1alpha1
+kind: KaiwoJob
+metadata:
+  name: multi-model-inference-pipeline
+  namespace: advanced
+  labels:
+    app: multi-model-pipeline
+    pipeline-stage: inference
+    phase: phase2-advanced
+spec:
+  # Elastic Scaling for Pipeline Flexibility
+  elasticScaling:
+    enabled: true
+    minReplicas: 6       # Minimum pipeline capacity
+    maxReplicas: 24      # Maximum pipeline throughput
+    
+    # Pipeline-Optimized Scaling
+    scalingPolicy:
+      scaleUpRate: 6     # Scale in pipeline increments
+      scaleDownRate: 3   # Conservative pipeline scale-down
+      cooldown: "4m"     # Quick response for pipeline demand
+      stabilizationWindow: "2m"
+    
+    # Pipeline Metrics
+    metrics:
+    - type: "custom"
+      metricName: "pipeline_throughput"
+      threshold: 85.0    # Scale when throughput < 85% capacity
+    - type: "custom" 
+      metricName: "request_queue_depth"
+      threshold: 50.0    # Scale when queue > 50 requests
+    - type: "gpu"
+      threshold: 75.0    # GPU utilization threshold
+    - type: "memory"
+      threshold: 70.0    # Memory threshold for model loading
+  
+  # Pipeline Configuration
+  replicas: 12           # Start with medium pipeline capacity
+  gpus: 12               # 1 GPU per stage initially
+  gpuVendor: amd
+  gpuModels: ["MI300X"]
+  
+  # Pipeline Resources (per stage)
+  resources:
+    requests:
+      cpu: "4"           # CPU for preprocessing/postprocessing
+      memory: "16Gi"     # Memory for model caching
+      amd.com/gpu: "1"   # 1 GPU per pipeline stage
+    limits:
+      cpu: "8"
+      memory: "32Gi"
+      amd.com/gpu: "1"
+  
+  # Multi-Model Pipeline Container
+  template:
+    spec:
+      containers:
+      - name: pipeline-worker
+        image: rocm/multi-model-pipeline:latest
+        resources:
+          requests:
+            cpu: "4"
+            memory: "16Gi"
+          limits:
+            cpu: "8"
+            memory: "32Gi"
+  
+  # High Priority for Production Pipeline
+  workloadPriorityClass: "production-priority"
+  
+  # Resource Profile for Pipeline Optimization
+  resourceProfile: "multi-model-inference-optimized"
+  
+  # Pipeline Duration (24/7 service)
+  duration: "168h"       # 1 week continuous operation
+  
+  # Topology for Performance
+  preferredTopologyLabel: "topology.kubernetes.io/zone"
+  
+  # Pipeline Labels
+  podTemplateSpecLabels:
+    kaiwo.ai/elastic-scaling: "enabled"
+    kaiwo.ai/workload-type: "multi-model-pipeline"
+    kaiwo.ai/scaling-strategy: "pipeline-throughput"
+    kaiwo.ai/service-level: "production"
+    kaiwo.ai/resource-profile: "multi-model-inference-optimized"

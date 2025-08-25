@@ -1,0 +1,99 @@
+apiVersion: kaiwo.silogen.ai/v1alpha1
+kind: KaiwoJob
+metadata:
+  name: federated-research-cluster
+  namespace: research-federation
+  labels:
+    app: federated-research
+    federation-id: "fed-research-2025"
+    phase: phase2-advanced
+spec:
+  # Gang Scheduling for Federated Coordination
+  gangScheduling:
+    enabled: true
+    minMembers: 16       # Large federated cluster
+    timeout: "30m"       # Extended timeout for federation setup
+    policy: "adaptive"   # Allow partial federation if needed
+    resourceReservation: true
+  
+  # Elastic Scaling Within Federation
+  elasticScaling:
+    enabled: true
+    minReplicas: 16      # Minimum federation size
+    maxReplicas: 64      # Large-scale federation capability
+    
+    # Federation Scaling Policy
+    scalingPolicy:
+      scaleUpRate: 8     # Scale in federation increments
+      scaleDownRate: 4   # Conservative federation scale-down
+      cooldown: "15m"    # Extended cooldown for federation stability
+      stabilizationWindow: "10m"
+    
+    # Federation Metrics
+    metrics:
+    - type: "custom"
+      metricName: "federation_consensus_time"
+      threshold: 80.0    # Scale if consensus is slow
+    - type: "custom"
+      metricName: "data_locality_efficiency"
+      threshold: 70.0    # Scale for better data distribution
+    - type: "gpu"
+      threshold: 85.0    # High GPU threshold for research workloads
+    - type: "custom"
+      metricName: "research_experiment_backlog"
+      threshold: 100.0   # Scale when experiments are queued
+  
+  # Federation Configuration
+  replicas: 32           # Start with substantial federation
+  gpus: 64               # 2 GPUs per federated worker
+  gpusPerReplica: 2
+  gpuVendor: amd
+  gpuModels: ["MI300X"]
+  
+  # Research-Grade Resources
+  resources:
+    requests:
+      cpu: "12"          # High CPU for research computation
+      memory: "64Gi"     # Large memory for research datasets
+      amd.com/gpu: "2"   # 2 GPUs per federated worker
+    limits:
+      cpu: "24"
+      memory: "128Gi"
+      amd.com/gpu: "2"
+  
+  # Federated Research Container
+  template:
+    spec:
+      containers:
+      - name: federated-researcher
+        image: rocm/federated-research:latest
+        resources:
+          requests:
+            cpu: "12"
+            memory: "64Gi"
+          limits:
+            cpu: "24"
+            memory: "128Gi"
+  
+  # Research Priority
+  workloadPriorityClass: "research-federation-priority"
+  
+  # Resource Profile for Research Optimization
+  resourceProfile: "federated-research-optimized"
+  
+  # Extended Research Duration
+  duration: "720h"       # 30 days for long-term research
+  
+  # Multi-Zone Topology for Federation
+  requiredTopologyLabel: "topology.kubernetes.io/region"
+  preferredTopologyLabel: "topology.kubernetes.io/zone"
+  
+  # Federation Labels
+  podTemplateSpecLabels:
+    kaiwo.ai/gang-scheduling: "enabled"
+    kaiwo.ai/elastic-scaling: "enabled"
+    kaiwo.ai/workload-type: "federated-research"
+    kaiwo.ai/federation-mode: "research-cluster"
+    kaiwo.ai/coordination: "gang-elastic-federation"
+    kaiwo.ai/resource-profile: "federated-research-optimized"
+    kaiwo.ai/research-tier: "advanced"
