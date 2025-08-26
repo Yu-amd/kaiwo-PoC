@@ -1,0 +1,300 @@
+# Phase 3 Example 5: Automated Hyperparameter Tuning
+# This example demonstrates Kaiwo's intelligent hyperparameter optimization using
+# Bayesian optimization, TPE, and multi-objective optimization for AMD GPU workloads.
+
+apiVersion: kaiwo.silogen.ai/v1alpha1
+kind: KaiwoJob
+metadata:
+  name: hyperparameter-tuning-demo
+  namespace: default
+  annotations:
+    # Hyperparameter tuning configuration
+    kaiwo.ai/hyperparameter-tuning: "enabled"
+    kaiwo.ai/tuning-algorithm: "bayesian_optimization"
+    kaiwo.ai/multi-objective: "enabled"
+    kaiwo.ai/resource-aware-tuning: "enabled"
+    # AMD GPU specific tuning
+    kaiwo.ai/amd-gpu-tuning: "enabled"
+    kaiwo.ai/memory-aware-tuning: "enabled"
+spec:
+  user: "ml-engineer@amd.com"
+  gpuVendor: "amd"
+  gpus: 2.0
+  
+  # Hyperparameter tuning experiment configuration
+  hyperparameterTuning:
+    enabled: true
+    experiment:
+      name: "amd-gpu-model-optimization"
+      description: "Multi-objective optimization for accuracy and inference speed"
+      maxTrials: 50
+      maxDuration: "6h"
+      earlyStoppingRounds: 10
+    
+    # Search space definition
+    searchSpace:
+      parameters:
+        - name: "learning_rate"
+          type: "float"
+          range: {min: 0.0001, max: 0.1}
+          distribution: "loguniform"
+          
+        - name: "batch_size"
+          type: "int"
+          range: {min: 16, max: 256}
+          step: 16
+          
+        - name: "hidden_layers"
+          type: "int"
+          range: {min: 2, max: 8}
+          
+        - name: "dropout_rate"
+          type: "float"
+          range: {min: 0.1, max: 0.5}
+          
+        - name: "optimizer"
+          type: "categorical"
+          choices: ["adam", "sgd", "rmsprop", "adamw"]
+          
+        - name: "activation"
+          type: "categorical"
+          choices: ["relu", "gelu", "swish", "mish"]
+    
+    # Multi-objective optimization
+    objectives:
+      - name: "accuracy"
+        direction: "maximize"
+        weight: 0.6
+        priority: 1
+        
+      - name: "inference_speed"
+        direction: "maximize"
+        weight: 0.3
+        priority: 2
+        
+      - name: "gpu_memory_efficiency"
+        direction: "maximize"
+        weight: 0.1
+        priority: 3
+    
+    # Optimization algorithm configuration
+    algorithm:
+      type: "bayesian_optimization"
+      config:
+        acquisition_function: "EI"  # Expected Improvement
+        kappa: 2.576  # UCB parameter
+        xi: 0.01      # EI parameter
+        
+    # Resource constraints for tuning
+    resourceConstraints:
+      maxCPU: 16.0
+      maxMemory: 64.0
+      maxGPU: 4.0
+      costBudget: 1000.0
+      timebudget: "6h"
+    
+    # AMD GPU specific tuning
+    amdGpuOptimization:
+      enabled: true
+      timeSlicingAware: true
+      fractionalGPUAware: true
+      memoryOptimization: true
+      powerEfficiency: true
+  
+  entryPoint: |
+    #!/bin/bash
+    echo "🎯 Automated Hyperparameter Tuning Demo"
+    echo "Multi-objective optimization for AMD GPU performance"
+    
+    # Get hyperparameters from Kaiwo's optimization engine
+    LEARNING_RATE=${KAIWO_HP_LEARNING_RATE:-0.001}
+    BATCH_SIZE=${KAIWO_HP_BATCH_SIZE:-64}
+    HIDDEN_LAYERS=${KAIWO_HP_HIDDEN_LAYERS:-4}
+    DROPOUT_RATE=${KAIWO_HP_DROPOUT_RATE:-0.2}
+    OPTIMIZER=${KAIWO_HP_OPTIMIZER:-adam}
+    ACTIVATION=${KAIWO_HP_ACTIVATION:-relu}
+    
+    echo "📋 Current Trial Hyperparameters:"
+    echo "  Learning Rate: $LEARNING_RATE"
+    echo "  Batch Size: $BATCH_SIZE" 
+    echo "  Hidden Layers: $HIDDEN_LAYERS"
+    echo "  Dropout Rate: $DROPOUT_RATE"
+    echo "  Optimizer: $OPTIMIZER"
+    echo "  Activation: $ACTIVATION"
+    
+    echo ""
+    echo "🚀 Training model with optimized hyperparameters..."
+    
+    # Simulate training with different hyperparameters
+    start_time=$(date +%s)
+    
+    # Training simulation based on hyperparameters
+    base_accuracy=75
+    base_speed=100
+    
+    # Learning rate impact on accuracy
+    if (( $(echo "$LEARNING_RATE > 0.01" | bc -l) )); then
+      accuracy_boost=5
+      speed_boost=-10
+    elif (( $(echo "$LEARNING_RATE < 0.001" | bc -l) )); then
+      accuracy_boost=-3
+      speed_boost=5
+    else
+      accuracy_boost=8
+      speed_boost=0
+    fi
+    
+    # Batch size impact
+    if [ "$BATCH_SIZE" -gt 128 ]; then
+      accuracy_boost=$((accuracy_boost + 2))
+      speed_boost=$((speed_boost + 15))
+      memory_usage=$((memory_usage + 20))
+    elif [ "$BATCH_SIZE" -lt 32 ]; then
+      accuracy_boost=$((accuracy_boost - 2))
+      speed_boost=$((speed_boost - 10))
+      memory_usage=$((memory_usage - 15))
+    fi
+    
+    # Simulate training epochs
+    for epoch in {1..10}; do
+      current_acc=$((base_accuracy + accuracy_boost + RANDOM % 5))
+      echo "Epoch $epoch/10: Accuracy=$current_acc.${RANDOM:0:2}%, Loss=0.$((500 - epoch * 30))${RANDOM:0:1}"
+      sleep 8
+    done
+    
+    end_time=$(date +%s)
+    training_time=$((end_time - start_time))
+    
+    # Calculate final metrics
+    final_accuracy=$((base_accuracy + accuracy_boost + RANDOM % 3))
+    inference_speed=$((base_speed + speed_boost + RANDOM % 10))
+    gpu_memory_eff=$((80 + RANDOM % 15))
+    
+    echo ""
+    echo "📊 Trial Results:"
+    echo "  Final Accuracy: $final_accuracy.${RANDOM:0:2}%"
+    echo "  Inference Speed: $inference_speed samples/sec"
+    echo "  GPU Memory Efficiency: $gpu_memory_eff%"
+    echo "  Training Time: ${training_time}s"
+    
+    # Export metrics for Kaiwo's optimization engine
+    echo "KAIWO_METRIC_ACCURACY=$final_accuracy.${RANDOM:0:2}" >> /tmp/kaiwo_metrics
+    echo "KAIWO_METRIC_INFERENCE_SPEED=$inference_speed" >> /tmp/kaiwo_metrics
+    echo "KAIWO_METRIC_GPU_MEMORY_EFFICIENCY=$gpu_memory_eff" >> /tmp/kaiwo_metrics
+    echo "KAIWO_METRIC_TRAINING_TIME=$training_time" >> /tmp/kaiwo_metrics
+    
+    echo "✅ Trial completed - Metrics reported to optimization engine"
+
+---
+# Hyperparameter Tuning Configuration
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: hyperparameter-tuning-config
+  namespace: default
+data:
+  tuning-algorithms.yaml: |
+    algorithms:
+      bayesian_optimization:
+        description: "Gaussian Process-based optimization"
+        parameters:
+          acquisition_functions: ["EI", "PI", "UCB", "LCB"]
+          kernel_types: ["RBF", "Matern", "Linear"]
+          noise_level: 0.01
+          n_initial_points: 5
+        
+        performance:
+          convergence_speed: "medium"
+          exploration_capability: "high"
+          exploitation_capability: "high"
+          
+      tpe_optimization:
+        description: "Tree-structured Parzen Estimator"
+        parameters:
+          n_startup_trials: 10
+          n_random_samples: 20
+          gamma: 0.25
+          prior_weight: 1.0
+          
+        performance:
+          convergence_speed: "fast"
+          categorical_handling: "excellent"
+          scalability: "high"
+          
+      multi_objective:
+        description: "Pareto-optimal multi-objective optimization"
+        parameters:
+          strategies: ["pareto", "weighted", "lexicographic"]
+          reference_point: "auto"
+          
+        performance:
+          trade_off_analysis: "excellent"
+          solution_diversity: "high"
+  
+  search-space-templates.yaml: |
+    templates:
+      deep_learning_model:
+        parameters:
+          - {name: "learning_rate", type: "float", range: {min: 1e-5, max: 1e-1}, log: true}
+          - {name: "batch_size", type: "int", choices: [16, 32, 64, 128, 256]}
+          - {name: "hidden_size", type: "int", range: {min: 64, max: 1024}, step: 64}
+          - {name: "num_layers", type: "int", range: {min: 1, max: 10}}
+          - {name: "dropout", type: "float", range: {min: 0.0, max: 0.5}}
+          
+      cnn_architecture:
+        parameters:
+          - {name: "conv_layers", type: "int", range: {min: 2, max: 8}}
+          - {name: "filters", type: "int", range: {min: 32, max: 512}, step: 32}
+          - {name: "kernel_size", type: "int", choices: [3, 5, 7]}
+          - {name: "pooling", type: "categorical", choices: ["max", "avg", "adaptive"]}
+          
+      optimizer_config:
+        parameters:
+          - {name: "optimizer", type: "categorical", choices: ["adam", "sgd", "rmsprop", "adamw"]}
+          - {name: "weight_decay", type: "float", range: {min: 0.0, max: 0.01}}
+          - {name: "momentum", type: "float", range: {min: 0.0, max: 0.99}}
+          
+  resource-aware-tuning.yaml: |
+    resource_awareness:
+      amd_gpu_specific:
+        memory_constraints:
+          hbm_memory_limit: "48GB"  # MI300X HBM memory
+          memory_efficiency_target: 0.85
+          
+        performance_optimization:
+          chiplet_awareness: true
+          numa_optimization: true
+          power_efficiency: true
+          
+        time_slicing:
+          enabled: true
+          allocation_aware: true
+          context_switch_optimization: true
+          
+      cost_optimization:
+        budget_constraints: true
+        cost_per_trial_limit: 50.0
+        early_stopping_on_budget: true
+        
+      parallel_trials:
+        max_concurrent: 4
+        resource_sharing: "intelligent"
+        
+---
+# Tuning Results Dashboard
+apiVersion: v1
+kind: Service
+metadata:
+  name: tuning-dashboard
+  namespace: default
+spec:
+  selector:
+    app: hyperparameter-tuning
+  ports:
+  - name: dashboard
+    port: 8080
+    targetPort: 8080
+  - name: api
+    port: 8081
+    targetPort: 8081
+  type: ClusterIP

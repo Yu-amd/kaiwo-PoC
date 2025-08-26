@@ -1,0 +1,368 @@
+# Phase 3 Example 7: Intelligent Cost Optimization
+# This example demonstrates Kaiwo's ML-driven cost optimization capabilities
+# for AMD GPU environments with automated recommendations and optimization strategies.
+
+apiVersion: kaiwo.silogen.ai/v1alpha1
+kind: KaiwoJob
+metadata:
+  name: cost-optimization-demo
+  namespace: default
+  annotations:
+    # Cost optimization configuration
+    kaiwo.ai/cost-optimization: "enabled"
+    kaiwo.ai/cost-analysis: "comprehensive"
+    kaiwo.ai/optimization-recommendations: "enabled"
+    kaiwo.ai/budget-tracking: "enabled"
+    # AMD GPU cost optimization
+    kaiwo.ai/amd-gpu-cost-optimization: "enabled"
+    kaiwo.ai/efficiency-optimization: "enabled"
+spec:
+  user: "finance-engineer@amd.com"
+  gpuVendor: "amd"
+  gpus: 1.0
+  
+  # Cost optimization configuration
+  costOptimization:
+    enabled: true
+    
+    # Budget constraints
+    budget:
+      monthlyLimit: 25000.0
+      dailyLimit: 850.0
+      costAlerts:
+        - threshold: 0.8   # 80% of budget
+          severity: "warning"
+        - threshold: 0.95  # 95% of budget
+          severity: "critical"
+    
+    # Optimization objectives
+    objectives:
+      - type: "minimize_cost"
+        weight: 0.6
+        target: 0.25  # 25% cost reduction
+        
+      - type: "maximize_performance"
+        weight: 0.3
+        tolerance: 0.05  # Max 5% performance loss
+        
+      - type: "maintain_sla"
+        weight: 0.1
+        requirement: 0.99  # 99% availability
+    
+    # Cost optimization strategies
+    strategies:
+      rightsizing:
+        enabled: true
+        aggressiveness: "moderate"
+        
+      spotInstances:
+        enabled: true
+        workloadTypes: ["batch", "training"]
+        
+      reservedCapacity:
+        enabled: true
+        commitmentPeriod: "1y"
+        
+      amdGpuOptimization:
+        timeSlicing: true
+        fractionalAllocation: true
+        powerOptimization: true
+        memoryOptimization: true
+    
+    # Cost tracking and analysis
+    tracking:
+      granularity: "hourly"
+      breakdown: ["compute", "memory", "storage", "network", "gpu"]
+      attribution: ["user", "project", "workload_type"]
+      
+  entryPoint: |
+    #!/bin/bash
+    echo "💰 Intelligent Cost Optimization Demo"
+    echo "Demonstrating ML-driven cost analysis and optimization"
+    
+    echo "📊 Current Cost Analysis..."
+    echo "  • Analyzing resource utilization patterns"
+    echo "  • Identifying cost optimization opportunities"
+    echo "  • Calculating potential savings"
+    
+    # Simulate cost analysis
+    sleep 8
+    
+    echo ""
+    echo "💵 Current Monthly Spend Analysis:"
+    compute_cost=12500
+    gpu_cost=8750
+    memory_cost=2100
+    storage_cost=1200
+    network_cost=450
+    total_cost=$((compute_cost + gpu_cost + memory_cost + storage_cost + network_cost))
+    
+    echo "  Total Monthly Cost: $${total_cost}"
+    echo "    • Compute (CPU): $${compute_cost} (50%)"
+    echo "    • AMD MI300X GPUs: $${gpu_cost} (35%)"
+    echo "    • Memory: $${memory_cost} (8%)"
+    echo "    • Storage: $${storage_cost} (5%)"
+    echo "    • Network: $${network_cost} (2%)"
+    
+    echo ""
+    echo "🔍 Cost Optimization Opportunities Identified:"
+    
+    # Rightsizing analysis
+    rightsizing_savings=3125
+    echo "  1. Resource Rightsizing: $${rightsizing_savings} savings/month (25%)"
+    echo "     • 15 over-provisioned CPU instances identified"
+    echo "     • Average utilization: 45% (target: 75%)"
+    echo "     • Recommendation: Downsize to optimal instance types"
+    
+    # AMD GPU optimization
+    gpu_savings=2187
+    echo "  2. AMD GPU Optimization: $${gpu_savings} savings/month (25%)"
+    echo "     • Enable time-slicing for 8 underutilized GPUs"
+    echo "     • Implement fractional allocation for inference jobs"
+    echo "     • Average GPU utilization: 62% (target: 85%)"
+    
+    # Spot instance opportunities
+    spot_savings=1875
+    echo "  3. Spot Instance Usage: $${spot_savings} savings/month (15%)"
+    echo "     • 12 batch workloads suitable for spot instances"
+    echo "     • Training jobs with checkpointing capability"
+    echo "     • Potential 60% discount on eligible workloads"
+    
+    # Memory optimization
+    memory_savings=525
+    echo "  4. Memory Optimization: $${memory_savings} savings/month (25%)"
+    echo "     • Memory over-allocation detected in 20 jobs"
+    echo "     • Implement memory pooling and sharing"
+    echo "     • HBM memory optimization for AMD GPUs"
+    
+    total_savings=$((rightsizing_savings + gpu_savings + spot_savings + memory_savings))
+    savings_percentage=$(((total_savings * 100) / total_cost))
+    
+    echo ""
+    echo "💡 Total Optimization Potential:"
+    echo "  Current Cost: $${total_cost}/month"
+    echo "  Potential Savings: $${total_savings}/month (${savings_percentage}%)"
+    echo "  Optimized Cost: $((total_cost - total_savings))/month"
+    
+    echo ""
+    echo "🎯 AMD GPU Specific Optimizations:"
+    echo "  Current GPU Efficiency: 62%"
+    echo "  Target GPU Efficiency: 85%"
+    echo ""
+    echo "  Time-Slicing Benefits:"
+    echo "    • Enable sharing of 8 underutilized MI300X GPUs"
+    echo "    • Increase effective GPU capacity by 35%"
+    echo "    • Cost avoidance: $2,400/month in new GPU purchases"
+    echo ""
+    echo "  Fractional Allocation:"
+    echo "    • 24 inference jobs using <0.5 GPU each"
+    echo "    • Consolidate to 6 full GPUs with time-slicing"
+    echo "    • Direct savings: $4,320/month"
+    echo ""
+    echo "  Power Optimization:"
+    echo "    • Smart scheduling during off-peak hours"
+    echo "    • Dynamic frequency scaling for efficiency workloads"
+    echo "    • Estimated power savings: 15% ($450/month)"
+    
+    echo ""
+    echo "📈 Cost Trend Analysis:"
+    echo "  Past 3 months cost trend: +12% growth"
+    echo "  Projected 6-month cost (without optimization): $${total_cost}"
+    echo "  Projected 6-month cost (with optimization): $((total_cost - total_savings))"
+    echo "  Cumulative savings over 6 months: $((total_savings * 6))"
+    
+    echo ""
+    echo "⚡ Implementation Roadmap:"
+    echo "  Phase 1 (Week 1-2): Quick wins"
+    echo "    • Enable AMD GPU time-slicing: $1,200 immediate savings"
+    echo "    • Rightsize 5 most over-provisioned instances: $800 savings"
+    echo ""
+    echo "  Phase 2 (Week 3-4): Medium-term optimizations"
+    echo "    • Migrate 8 batch jobs to spot instances: $1,500 savings"
+    echo "    • Implement fractional GPU allocation: $1,800 savings"
+    echo ""
+    echo "  Phase 3 (Month 2): Advanced optimizations"
+    echo "    • Deploy reserved capacity for stable workloads: $2,100 savings"
+    echo "    • Implement cross-region cost optimization: $800 savings"
+    
+    echo ""
+    echo "🚨 Cost Alerts and Monitoring:"
+    echo "  • Real-time cost tracking enabled"
+    echo "  • Budget alert at 80%: Email + Slack notification"
+    echo "  • Budget alert at 95%: Automatic workload throttling"
+    echo "  • Daily cost reports with optimization recommendations"
+    
+    echo ""
+    echo "✅ Cost Optimization Analysis Complete"
+    echo "💰 Total potential savings: $${total_savings}/month (${savings_percentage}%)"
+    echo "📊 Implementation plan exported to cost management dashboard"
+
+---
+# Cost Optimization Service Configuration
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: cost-optimization-config
+  namespace: default
+data:
+  cost-models.yaml: |
+    pricing_models:
+      compute:
+        cpu_core_hour: 0.048
+        memory_gb_hour: 0.012
+        storage_gb_month: 0.10
+        network_gb: 0.09
+        
+      amd_gpu:
+        mi300x_hour: 2.40
+        mi250x_hour: 1.80
+        mi210_hour: 1.20
+        memory_gb_hour: 0.15
+        
+      discounts:
+        spot_instances:
+          cpu: 0.60      # 60% discount
+          gpu: 0.65      # 65% discount
+          memory: 0.55   # 55% discount
+          
+        reserved_capacity:
+          "1y_commitment": 0.35  # 35% discount
+          "3y_commitment": 0.50  # 50% discount
+          
+        sustained_use:
+          threshold: 0.25  # 25% of month
+          discount: 0.20   # 20% discount
+          
+    optimization_algorithms:
+      rightsizing:
+        algorithm: "linear_programming"
+        constraints:
+          - "performance_sla"
+          - "availability_requirement"
+        objective: "minimize_cost"
+        
+      workload_placement:
+        algorithm: "bin_packing_optimization"
+        strategies:
+          - "best_fit_decreasing"
+          - "first_fit_decreasing"
+        gpu_sharing: "time_slicing_aware"
+        
+      budget_optimization:
+        algorithm: "multi_objective_optimization"
+        objectives:
+          - {name: "cost", weight: 0.6, direction: "minimize"}
+          - {name: "performance", weight: 0.3, direction: "maximize"}
+          - {name: "reliability", weight: 0.1, direction: "maximize"}
+          
+  amd-gpu-cost-optimization.yaml: |
+    amd_gpu_optimization:
+      time_slicing:
+        cost_benefits:
+          sharing_ratio: 4.0  # 4 workloads per GPU
+          efficiency_gain: 0.35
+          cost_reduction: 0.25
+          
+        implementation:
+          slice_duration: "100ms"
+          context_switch_cost: "5ms"
+          memory_isolation: true
+          
+      fractional_allocation:
+        supported_fractions: [0.1, 0.25, 0.5, 0.75, 1.0]
+        cost_multiplier: 
+          "0.1": 0.12
+          "0.25": 0.28
+          "0.5": 0.55
+          "0.75": 0.82
+          "1.0": 1.0
+          
+        workload_suitability:
+          inference: "high"
+          training: "medium"
+          batch: "high"
+          
+      memory_optimization:
+        hbm_pooling: true
+        dynamic_allocation: true
+        garbage_collection: "optimized"
+        cost_savings: 0.15
+        
+      power_efficiency:
+        dynamic_frequency: true
+        idle_power_management: true
+        thermal_optimization: true
+        power_cost_reduction: 0.12
+        
+  cost-alerts.yaml: |
+    alerting:
+      budget_alerts:
+        thresholds:
+          - {level: "warning", percentage: 75, actions: ["email", "slack"]}
+          - {level: "critical", percentage: 90, actions: ["email", "slack", "webhook"]}
+          - {level: "emergency", percentage: 98, actions: ["email", "slack", "webhook", "throttle"]}
+          
+      anomaly_detection:
+        cost_spike_threshold: 2.0  # 2x normal cost
+        detection_window: "1h"
+        cooldown_period: "4h"
+        
+      optimization_opportunities:
+        detection_frequency: "daily"
+        minimum_savings: 100.0  # $100/month minimum
+        notification_channels: ["email", "dashboard"]
+        
+      reporting:
+        daily_summary: true
+        weekly_detailed: true
+        monthly_comprehensive: true
+        custom_reports: true
+
+---
+# Cost Dashboard and Monitoring
+apiVersion: v1
+kind: Service
+metadata:
+  name: cost-dashboard
+  namespace: default
+  labels:
+    app: cost-optimization
+spec:
+  selector:
+    app: cost-dashboard
+  ports:
+  - name: dashboard
+    port: 8080
+    targetPort: 8080
+  - name: api
+    port: 8081
+    targetPort: 8081
+  type: ClusterIP
+
+---
+# Cost Optimization CronJob
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: daily-cost-optimization
+  namespace: default
+spec:
+  schedule: "0 6 * * *"  # Daily at 6 AM
+  jobTemplate:
+    spec:
+      template:
+        spec:
+          containers:
+          - name: cost-optimizer
+            image: kaiwo/cost-optimizer:latest
+            command:
+            - /bin/sh
+            - -c
+            - |
+              echo "Running daily cost optimization analysis..."
+              # Analyze current costs and utilization
+              # Generate optimization recommendations
+              # Send alerts for budget thresholds
+              # Update cost forecasts
+              echo "Cost optimization analysis completed"
+          restartPolicy: OnFailure

@@ -1,0 +1,320 @@
+# Phase 3 Example 6: Intelligent Resource Prediction
+# This example demonstrates Kaiwo's intelligent resource forecasting, capacity planning,
+# and cost optimization for AMD GPU environments.
+
+apiVersion: kaiwo.silogen.ai/v1alpha1
+kind: KaiwoJob
+metadata:
+  name: resource-prediction-demo
+  namespace: default
+  annotations:
+    # Resource prediction configuration
+    kaiwo.ai/resource-prediction: "enabled"
+    kaiwo.ai/demand-forecasting: "enabled"
+    kaiwo.ai/capacity-planning: "enabled"
+    kaiwo.ai/cost-optimization: "enabled"
+    # Prediction parameters
+    kaiwo.ai/forecast-horizon: "30d"
+    kaiwo.ai/confidence-threshold: "0.8"
+    kaiwo.ai/seasonality-detection: "enabled"
+spec:
+  user: "devops-engineer@amd.com"
+  gpuVendor: "amd"
+  gpus: 1.0
+  
+  # Resource prediction configuration
+  resourcePrediction:
+    enabled: true
+    
+    # Demand forecasting
+    demandForecasting:
+      horizon: "30d"
+      confidenceLevel: 0.85
+      seasonalityDetection: true
+      trendAnalysis: true
+      anomalyDetection: true
+      
+    # Capacity planning
+    capacityPlanning:
+      planningHorizon: "90d"
+      growthBuffers:
+        cpu: 0.2      # 20% buffer
+        memory: 0.25  # 25% buffer
+        gpu: 0.3      # 30% buffer for AMD GPUs
+      costConstraints:
+        maxMonthlyCost: 50000.0
+        maxGrowthRate: 0.15
+      performanceTargets:
+        maxLatency: "500ms"
+        minThroughput: 1000.0
+        availabilityTarget: 0.999
+        utilizationTarget: 0.8
+    
+    # Cost optimization
+    costOptimization:
+      enabled: true
+      objectives:
+        - type: "minimize_cost"
+          weight: 0.5
+        - type: "maximize_performance" 
+          weight: 0.3
+        - type: "balance"
+          weight: 0.2
+      constraints:
+        maxCostIncrease: 0.1
+        minPerformanceLevel: 0.9
+    
+    # AMD GPU specific prediction
+    amdGpuPrediction:
+      enabled: true
+      timeSlicingAware: true
+      fractionalPrediction: true
+      memoryOptimization: true
+      powerConsideration: true
+  
+  entryPoint: |
+    #!/bin/bash
+    echo "🔮 Intelligent Resource Prediction Demo"
+    echo "Demonstrating ML-driven capacity planning and cost optimization"
+    
+    echo "📊 Analyzing Historical Resource Usage Patterns..."
+    echo "  • Collecting 30 days of historical data"
+    echo "  • Identifying seasonal patterns and trends"
+    echo "  • Detecting anomalies and outliers"
+    
+    # Simulate historical data analysis
+    sleep 10
+    
+    echo ""
+    echo "🎯 Demand Forecasting Results:"
+    echo "  Next 7 days:"
+    for day in {1..7}; do
+      cpu_demand=$((60 + RANDOM % 30))
+      gpu_demand=$((70 + RANDOM % 25))
+      memory_demand=$((65 + RANDOM % 20))
+      confidence=$((80 + RANDOM % 15))
+      
+      echo "    Day $day: CPU ${cpu_demand}%, GPU ${gpu_demand}%, Memory ${memory_demand}% (${confidence}% confidence)"
+    done
+    
+    echo ""
+    echo "📈 Trend Analysis:"
+    echo "  • CPU demand: Increasing 5% weekly (linear trend)"
+    echo "  • GPU demand: Seasonal pattern detected (weekday peaks)"
+    echo "  • Memory demand: Stable with occasional bursts"
+    echo "  • Network I/O: Growing 3% monthly"
+    
+    echo ""
+    echo "🔍 Anomaly Detection:"
+    echo "  • Detected 3 anomalies in past 30 days"
+    echo "  • Anomaly 1: GPU spike on 2025-12-15 (likely model training)"
+    echo "  • Anomaly 2: Memory surge on 2025-12-22 (data processing)"
+    echo "  • Anomaly 3: CPU bottleneck on 2025-12-28 (inference burst)"
+    
+    echo ""
+    echo "🏗️ Capacity Planning Recommendations:"
+    echo "  Current Capacity: 64 CPU, 256GB Memory, 16 AMD MI300X GPUs"
+    echo "  Predicted Needs (30 days):"
+    echo "    • CPU: Add 16 cores (+25%) by Day 20"
+    echo "    • Memory: Add 64GB (+25%) by Day 15"
+    echo "    • GPU: Add 4 MI300X units (+25%) by Day 10"
+    echo "    • Estimated Cost: $45,000 (within $50,000 budget)"
+    
+    echo ""
+    echo "💰 Cost Optimization Analysis:"
+    current_cost=35000
+    optimized_cost=26250
+    savings=$((current_cost - optimized_cost))
+    savings_pct=$(((savings * 100) / current_cost))
+    
+    echo "  Current Monthly Cost: $${current_cost}"
+    echo "  Optimized Cost: $${optimized_cost}"
+    echo "  Potential Savings: $${savings} (${savings_pct}%)"
+    echo ""
+    echo "  Optimization Strategies:"
+    echo "    • Right-size over-provisioned CPU instances: $4,200 savings"
+    echo "    • Implement AMD GPU time-slicing: $3,150 savings"
+    echo "    • Use spot instances for batch workloads: $1,400 savings"
+    
+    echo ""
+    echo "⚡ Scaling Recommendations:"
+    echo "  Immediate Actions (Next 7 days):"
+    echo "    • Enable GPU time-slicing to handle 20% demand increase"
+    echo "    • Implement auto-scaling for CPU workloads"
+    echo "  Medium-term (Next 30 days):"
+    echo "    • Add 2 AMD MI300X GPUs for seasonal peak"
+    echo "    • Increase memory capacity by 15%"
+    echo "  Long-term (Next 90 days):"
+    echo "    • Plan for 40% capacity expansion"
+    echo "    • Consider multi-region deployment"
+    
+    echo ""
+    echo "🎯 AMD GPU Specific Insights:"
+    echo "  • MI300X utilization: Currently 78% average"
+    echo "  • Time-slicing opportunity: 25% efficiency gain possible"
+    echo "  • Fractional allocation: Enable for inference workloads"
+    echo "  • HBM memory: 15% optimization potential identified"
+    echo "  • Power efficiency: 12% improvement through smart scheduling"
+    
+    echo ""
+    echo "✅ Resource Prediction Analysis Complete"
+    echo "📋 Recommendations exported to cluster resource manager"
+
+---
+# Resource Prediction Service Configuration
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: resource-prediction-config
+  namespace: default
+data:
+  prediction-models.yaml: |
+    forecasting_models:
+      demand_prediction:
+        algorithm: "ARIMA"
+        parameters:
+          order: [2, 1, 2]
+          seasonal_order: [1, 1, 1, 24]  # Daily seasonality
+          confidence_intervals: [0.8, 0.9, 0.95]
+        accuracy: 0.89
+        
+      trend_analysis:
+        algorithm: "STL_decomposition"
+        parameters:
+          seasonal: 24  # hours
+          trend: 168    # week
+          robust: true
+        features:
+          - "time_of_day"
+          - "day_of_week"
+          - "month"
+          - "cluster_load"
+          
+      anomaly_detection:
+        algorithm: "isolation_forest"
+        parameters:
+          contamination: 0.05
+          n_estimators: 100
+          max_features: 1.0
+        threshold: 2.5
+        
+    capacity_models:
+      growth_prediction:
+        algorithm: "exponential_smoothing"
+        parameters:
+          alpha: 0.3
+          beta: 0.1
+          gamma: 0.05
+        horizon: "90d"
+        
+      resource_optimization:
+        algorithm: "linear_programming"
+        objective: "minimize_cost"
+        constraints:
+          - "performance_sla"
+          - "availability_target"
+          - "budget_limit"
+          
+  amd-gpu-prediction.yaml: |
+    amd_gpu_models:
+      utilization_prediction:
+        features:
+          - "workload_type"
+          - "model_complexity"
+          - "batch_size"
+          - "memory_requirements"
+          - "time_slicing_enabled"
+        
+        predictions:
+          - "gpu_utilization"
+          - "memory_utilization"
+          - "power_consumption"
+          - "thermal_profile"
+          
+      time_slicing_optimization:
+        parameters:
+          slice_duration: "100ms"
+          context_switch_overhead: "5ms"
+          efficiency_target: 0.85
+          
+        benefits:
+          utilization_improvement: 0.25
+          cost_reduction: 0.20
+          energy_efficiency: 0.15
+          
+      fractional_allocation:
+        supported_fractions: [0.1, 0.25, 0.5, 0.75, 1.0, 1.5, 2.0]
+        allocation_strategy: "best_fit_decreasing"
+        memory_isolation: true
+        
+  cost-optimization.yaml: |
+    cost_models:
+      pricing:
+        cpu_core_hour: 0.048
+        memory_gb_hour: 0.012
+        amd_mi300x_hour: 2.40
+        network_gb: 0.09
+        storage_gb_month: 0.10
+        
+      optimization_strategies:
+        rightsizing:
+          cpu_threshold: 0.8
+          memory_threshold: 0.85
+          potential_savings: 0.25
+          
+        spot_instances:
+          batch_workload_eligible: true
+          discount_rate: 0.60
+          interruption_tolerance: "high"
+          
+        reserved_capacity:
+          commitment_period: "1y"
+          discount_rate: 0.35
+          utilization_requirement: 0.75
+
+---
+# Capacity Planning Dashboard
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: capacity-dashboard
+  namespace: default
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: capacity-dashboard
+  template:
+    metadata:
+      labels:
+        app: capacity-dashboard
+    spec:
+      containers:
+      - name: dashboard
+        image: grafana/grafana:latest
+        ports:
+        - containerPort: 3000
+        env:
+        - name: GF_SECURITY_ADMIN_PASSWORD
+          value: "kaiwo-admin"
+        volumeMounts:
+        - name: dashboard-config
+          mountPath: /etc/grafana/provisioning
+      volumes:
+      - name: dashboard-config
+        configMap:
+          name: capacity-dashboard-config
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: capacity-dashboard
+  namespace: default
+spec:
+  selector:
+    app: capacity-dashboard
+  ports:
+  - port: 3000
+    targetPort: 3000
+  type: ClusterIP

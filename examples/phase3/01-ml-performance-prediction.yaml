@@ -1,0 +1,124 @@
+# Phase 3 Example 1: ML-Based Performance Prediction
+# This example demonstrates how Kaiwo uses machine learning to predict job performance,
+# resource requirements, and optimal placement for AI/ML workloads.
+
+apiVersion: kaiwo.silogen.ai/v1alpha1
+kind: KaiwoJob
+metadata:
+  name: ml-training-with-prediction
+  namespace: default
+  annotations:
+    # Enable ML-based performance prediction
+    kaiwo.ai/enable-ml-prediction: "true"
+    kaiwo.ai/prediction-confidence-threshold: "0.8"
+    kaiwo.ai/track-performance-metrics: "true"
+    # Request prediction explanation for transparency
+    kaiwo.ai/explain-predictions: "true"
+    kaiwo.ai/prediction-model: "ensemble"
+spec:
+  user: "ml-researcher@amd.com"
+  gpuVendor: "amd"
+  gpus: 2.0
+  
+  # Workload characteristics for ML prediction
+  workloadProfile:
+    type: "deep_learning_training"
+    framework: "pytorch"
+    modelSize: "large"
+    datasetSize: "10GB"
+    expectedDuration: "2h"
+    priority: "high"
+  
+  # Let ML predict optimal resources (these are initial estimates)
+  resourceHints:
+    cpu: "8"
+    memory: "32Gi"
+    estimatedGpuMemory: "24Gi"
+  
+  # ML prediction configuration
+  mlPredictionConfig:
+    enableDurationPrediction: true
+    enableResourcePrediction: true
+    enablePlacementOptimization: true
+    confidenceThreshold: 0.8
+    useHistoricalData: true
+    modelUpdateFrequency: "daily"
+  
+  entryPoint: |
+    #!/bin/bash
+    echo "🧠 ML-Predicted Training Job Starting..."
+    echo "This job will be optimized using Kaiwo's ML prediction engine"
+    
+    # Simulate ML training workload
+    echo "📊 Training deep learning model with predicted optimal resources..."
+    
+    # Monitor resource usage for ML model feedback
+    echo "Memory usage: $(free -h | grep Mem | awk '{print $3}')"
+    echo "GPU info:"
+    rocm-smi --showuse || echo "ROCm SMI not available in simulation"
+    
+    # Simulate training phases that ML can learn from
+    for epoch in {1..5}; do
+      echo "Epoch $epoch/5 - ML monitoring performance patterns..."
+      sleep 30
+      
+      # Log metrics that ML models will learn from
+      echo "Epoch $epoch completed - throughput: $((1000 + RANDOM % 500)) samples/sec"
+    done
+    
+    echo "✅ Training completed - ML models updated with performance data"
+    echo "🎯 Predicted vs Actual performance will improve future predictions"
+
+---
+# Performance Prediction Service Configuration
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: ml-prediction-config
+  namespace: default
+data:
+  prediction-models.yaml: |
+    models:
+      - name: "job_duration_predictor"
+        type: "random_forest"
+        accuracy: 0.87
+        features:
+          - "gpu_count"
+          - "memory_size"
+          - "dataset_size"
+          - "model_complexity"
+          - "user_history"
+      
+      - name: "resource_predictor"
+        type: "bayesian_optimizer"
+        accuracy: 0.91
+        features:
+          - "workload_type"
+          - "framework"
+          - "batch_size"
+          - "historical_usage"
+    
+    thresholds:
+      min_confidence: 0.8
+      update_frequency: "24h"
+      learning_rate: 0.1
+      
+  feature-engineering.yaml: |
+    features:
+      job_characteristics:
+        - gpu_count
+        - memory_request
+        - cpu_request
+        - estimated_duration
+      
+      historical_patterns:
+        - user_job_history
+        - similar_workload_performance
+        - time_of_day_patterns
+        - cluster_load_patterns
+      
+      workload_specific:
+        - ml_framework
+        - model_architecture
+        - dataset_characteristics
+        - training_type

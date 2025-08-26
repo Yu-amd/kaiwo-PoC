@@ -1,0 +1,224 @@
+# Phase 3 Example 3: MLflow Integration
+# This example demonstrates seamless MLflow integration for experiment tracking,
+# model registry, and automated ML lifecycle management.
+
+apiVersion: kaiwo.silogen.ai/v1alpha1
+kind: KaiwoJob
+metadata:
+  name: mlflow-experiment-tracking
+  namespace: default
+  annotations:
+    # MLflow integration configuration
+    kaiwo.ai/mlflow-enabled: "true"
+    kaiwo.ai/mlflow-experiment: "amd-gpu-optimization"
+    kaiwo.ai/mlflow-auto-tracking: "true"
+    kaiwo.ai/mlflow-track-resources: "true"
+    kaiwo.ai/mlflow-track-performance: "true"
+    # Model registry integration
+    kaiwo.ai/mlflow-model-registry: "enabled"
+    kaiwo.ai/mlflow-auto-register: "true"
+spec:
+  user: "mlops-engineer@amd.com"
+  gpuVendor: "amd"
+  gpus: 2.0
+  
+  # MLflow experiment configuration
+  mlflowConfig:
+    experiment:
+      name: "amd-gpu-optimization-experiment"
+      description: "Optimizing ML models for AMD MI300X GPUs"
+      tags:
+        project: "kaiwo-phase3"
+        gpu_type: "mi300x"
+        optimization_target: "inference_speed"
+    
+    tracking:
+      trackResources: true
+      trackPerformance: true
+      trackMetrics: true
+      trackArtifacts: true
+      autoLogging: true
+      metricsInterval: "30s"
+    
+    modelRegistry:
+      autoRegister: true
+      stagingEnabled: true
+      productionPromotion: true
+      versioningStrategy: "semantic"
+  
+  entryPoint: |
+    #!/bin/bash
+    echo "🔬 MLflow Integration Demo - Experiment Tracking"
+    echo "Demonstrating automated experiment tracking and model management"
+    
+    # MLflow experiment starts automatically via Kaiwo integration
+    echo "📋 Experiment: amd-gpu-optimization-experiment"
+    echo "🎯 Objective: Optimize model inference for AMD GPUs"
+    
+    # Simulate model training with different hyperparameters
+    echo "🧪 Training multiple model variants..."
+    
+    for lr in "0.01" "0.001" "0.0001"; do
+      for batch_size in "32" "64" "128"; do
+        echo "Training with lr=$lr, batch_size=$batch_size"
+        
+        # Simulate training metrics (MLflow tracks automatically)
+        accuracy=$(echo "scale=4; 0.8 + ($RANDOM % 100) / 1000" | bc -l)
+        loss=$(echo "scale=4; 0.5 - ($RANDOM % 200) / 1000" | bc -l)
+        
+        echo "  Accuracy: $accuracy"
+        echo "  Loss: $loss"
+        echo "  GPU Memory: $((16 + RANDOM % 8))GB"
+        echo "  Training Time: $((120 + RANDOM % 60))s"
+        
+        # Simulate saving model artifacts
+        echo "  Model saved: model_lr${lr}_bs${batch_size}.pth"
+        sleep 20
+      done
+    done
+    
+    echo "🏆 Best model identified and registered in MLflow Model Registry"
+    echo "📊 All experiments tracked with resource usage and performance metrics"
+    echo "🔄 Model lifecycle management enabled for production deployment"
+
+---
+# MLflow Server Configuration
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: mlflow-server
+  namespace: default
+  labels:
+    app: mlflow-server
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: mlflow-server
+  template:
+    metadata:
+      labels:
+        app: mlflow-server
+    spec:
+      containers:
+      - name: mlflow-server
+        image: mlflow/mlflow:latest
+        ports:
+        - containerPort: 5000
+          name: ui
+        - containerPort: 5001
+          name: api
+        env:
+        - name: MLFLOW_BACKEND_STORE_URI
+          value: "sqlite:///mlflow/mlflow.db"
+        - name: MLFLOW_DEFAULT_ARTIFACT_ROOT
+          value: "/mlflow/artifacts"
+        - name: MLFLOW_SERVER_HOST
+          value: "0.0.0.0"
+        - name: MLFLOW_SERVER_PORT
+          value: "5000"
+        volumeMounts:
+        - name: mlflow-data
+          mountPath: /mlflow
+        command:
+        - mlflow
+        - server
+        - --backend-store-uri=$(MLFLOW_BACKEND_STORE_URI)
+        - --default-artifact-root=$(MLFLOW_DEFAULT_ARTIFACT_ROOT)
+        - --host=$(MLFLOW_SERVER_HOST)
+        - --port=$(MLFLOW_SERVER_PORT)
+      volumes:
+      - name: mlflow-data
+        persistentVolumeClaim:
+          claimName: mlflow-pvc
+
+---
+# MLflow Service
+apiVersion: v1
+kind: Service
+metadata:
+  name: mlflow-service
+  namespace: default
+spec:
+  selector:
+    app: mlflow-server
+  ports:
+  - name: ui
+    port: 5000
+    targetPort: 5000
+  - name: api
+    port: 5001
+    targetPort: 5001
+  type: ClusterIP
+
+---
+# Persistent Volume for MLflow Data
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: mlflow-pvc
+  namespace: default
+spec:
+  accessModes:
+  - ReadWriteOnce
+  resources:
+    requests:
+      storage: 10Gi
+
+---
+# Kaiwo MLflow Integration Configuration
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: kaiwo-mlflow-config
+  namespace: default
+data:
+  mlflow-integration.yaml: |
+    mlflow:
+      server_url: "http://mlflow-service.default.svc.cluster.local:5000"
+      default_experiment: "kaiwo-experiments"
+      
+      auto_tracking:
+        enabled: true
+        track_resources: true
+        track_performance: true
+        track_hyperparameters: true
+        track_metrics: true
+        track_artifacts: true
+        metrics_interval: 30
+      
+      model_registry:
+        enabled: true
+        auto_register_threshold: 0.85  # Auto-register models with >85% accuracy
+        staging_approval: "automatic"
+        production_approval: "manual"
+        
+      experiments:
+        retention_days: 365
+        auto_archive: true
+        default_tags:
+          platform: "kaiwo"
+          gpu_vendor: "amd"
+          
+  experiment-templates.yaml: |
+    templates:
+      hyperparameter_tuning:
+        description: "Automated hyperparameter optimization"
+        tracking_config:
+          log_params: true
+          log_metrics: true
+          log_artifacts: true
+          log_model: true
+        
+      model_comparison:
+        description: "Compare different model architectures"
+        tracking_config:
+          compare_metrics: ["accuracy", "inference_time", "gpu_memory"]
+          auto_select_best: true
+          
+      performance_optimization:
+        description: "AMD GPU performance optimization"
+        tracking_config:
+          track_gpu_metrics: true
+          track_memory_usage: true
+          track_power_consumption: true
