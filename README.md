@@ -5,7 +5,7 @@
 
 Kaiwo provides an intelligent layer on top of Kubernetes, Kueue, and Ray to streamline the management and execution of AI workloads, with specialized support for **AMD GPU optimization** and advanced resource management.
 
-## 🚀 Overview
+## Overview
 
 Kaiwo is designed to simplify AI workload orchestration by providing:
 
@@ -27,16 +27,16 @@ Kaiwo is designed to simplify AI workload orchestration by providing:
 - **Performance Optimized**: Comprehensive testing framework with realistic AI/ML workload simulation
 - **Kubernetes Native**: Seamless integration with existing Kubernetes infrastructure
 
-## 📋 Four-Phase Development Roadmap
+## Four-Phase Development Roadmap
 
 Kaiwo follows a comprehensive four-phase implementation roadmap designed to incrementally deliver advanced AI workload management capabilities:
 
-### 🏗️ **Phase 1: Core Infrastructure Enhancement** ✅ **COMPLETED**
+### **Phase 1: Core Infrastructure Enhancement** - **COMPLETED**
 
 **Status**: **Successfully Implemented** (August 2025)  
 **Focus**: Foundation enhancement with advanced GPU management and improved scheduling
 
-#### ✅ **Implemented Components**:
+#### **Implemented Components**:
 
 1. **Advanced GPU Management** (`pkg/gpu/`)
    - Fractional GPU allocation with 0.1-1.0 support
@@ -75,12 +75,12 @@ Kaiwo follows a comprehensive four-phase implementation roadmap designed to incr
 - **Dynamic Load Balancing**: ~106ms/op (excellent performance)
 - **Memory Efficiency**: 4-11 B/op across all components
 
-### 🔧 **Phase 2: Advanced Workload Management** ✅ **COMPLETED**
+### **Phase 2: Advanced Workload Management** - **COMPLETED**
 
 **Status**: **Successfully Implemented** (August 2025)  
 **Focus**: Enhanced workload prioritization and dynamic scaling capabilities
 
-#### ✅ **Implemented Components**:
+#### **Implemented Components**:
 
 1. **Gang Scheduling** (`pkg/scheduling/gang/`)
    - All-or-nothing scheduling for distributed workloads
@@ -181,19 +181,19 @@ Kaiwo is designed to gracefully handle varying levels of AMD GPU Operator suppor
 2. **Automatic Upgrades**: New AMD GPU Operator capabilities are automatically utilized
 3. **Progressive Enhancement**: Features activate as operator capabilities become available
 
-### 📋 **Currently Available**
+### **Currently Available**
 - Basic GPU discovery and allocation
 - Memory monitoring via ROCm SMI
 - Container access to GPU devices  
 - Software-based time-slicing
 
-### 🚀 **Future-Ready**
+### **Future-Ready**
 - MI300X SPX/CPX mode support
 - XCD-level hardware partitioning
 - SR-IOV based isolation
 - Advanced memory partitioning
 
-## 📋 Requirements
+## Requirements
 
 ### System Requirements
 - **Kubernetes**: 1.28+ 
@@ -207,7 +207,7 @@ Kaiwo is designed to gracefully handle varying levels of AMD GPU Operator suppor
 - **Memory**: 8GB+ RAM
 - **Storage**: 20GB+ available space
 
-## 🛠️ Quick Start
+## Quick Start
 
 ### Installation
 
@@ -316,11 +316,11 @@ go test -bench=. -benchmem ./pkg/scheduling/gang/
 go test -bench=. -benchmem ./pkg/scaling/
 ```
 
-## 🚀 Performance Testing & Optimization Framework
+## Performance Testing & Optimization Framework
 
 Kaiwo includes a comprehensive performance testing and optimization framework designed to validate real-world AI/ML workloads and ensure optimal AMD GPU utilization in production environments.
 
-### ⚡ Framework Overview
+### Framework Overview
 
 Our performance framework provides:
 
@@ -407,14 +407,13 @@ go test -bench=BenchmarkLoadTestRunner ./test/performance/load-testing/ -benchti
 - Conservative power settings for cost optimization
 - Memory efficiency optimization
 
-### 📋 Performance Documentation
+### Performance Documentation
 
 For detailed performance analysis, optimization guides, and production deployment recommendations:
 
 - 📊 **[Performance Optimization Summary](./PERFORMANCE-OPTIMIZATION-SUMMARY.md)** - Comprehensive framework overview and results
 - 🏗️ **[Phase 1 Implementation](./PHASE1-IMPLEMENTATION-SUMMARY.md)** - Core infrastructure performance  
 - ⚡ **[Phase 2 Implementation](./PHASE2-IMPLEMENTATION-SUMMARY.md)** - Advanced features performance
-- 📖 **[Product Requirements](./Kaiwo-PoC_Product_Requirements_Document.md)** - Technical specifications and benchmarks
 
 ### Demo and Examples
 ```bash
