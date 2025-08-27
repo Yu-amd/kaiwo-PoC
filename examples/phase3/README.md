@@ -172,7 +172,7 @@ annotations:
 All Phase 3 examples showcase advanced AMD GPU optimization:
 
 - **Time-Slicing**: Intelligent GPU sharing with configurable isolation
-- **Fractional Allocation**: Precise GPU resource allocation (0.1-16 GPUs)
+- **Fractional Allocation**: Precise GPU resource allocation (0.1-1.0 GPUs)
 - **Memory Optimization**: HBM memory usage optimization
 - **Power Efficiency**: Dynamic power management and optimization
 - **Chiplet Awareness**: MI300X chiplet architecture optimization

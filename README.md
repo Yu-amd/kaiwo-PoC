@@ -379,7 +379,7 @@ Our performance framework provides:
 - **✅ Latency**: 21ms average end-to-end scheduling latency  
 - **✅ Success Rate**: 95%+ under concurrent load testing
 - **✅ Memory Efficiency**: Optimized 2.4MB memory utilization
-- **✅ AMD GPU Support**: Specialized fractional allocation (0.1-16 GPUs)
+- **✅ AMD GPU Support**: Specialized fractional allocation (0.1-1.0 GPUs)
 - **✅ Scalability**: Handles 20+ concurrent clients effectively
 
 ### 🧪 Running Performance Tests

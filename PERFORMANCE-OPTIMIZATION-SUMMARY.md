@@ -26,7 +26,7 @@ We created a comprehensive simulation framework that models real-world AI/ML wor
 - **Realistic Resource Requirements:**
   - CPU: 1-128 cores
   - Memory: 2Gi-512Gi
-  - GPU: 0.1-16 AMD GPUs (fractional allocation supported)
+  - GPU: 0.1-1.0 AMD GPUs (fractional allocation supported)
   - Expected duration: 15 minutes - 24 hours
 
 - **Advanced Features Tested:**

@@ -142,7 +142,7 @@ kubectl apply -f phase3/07-cost-optimization.yaml
 All examples are specifically optimized for AMD Instinct GPUs:
 - **MI300X Support**: Chiplet architecture optimization (SPX/CPX modes)
 - **Time-Slicing**: Intelligent GPU sharing with configurable isolation
-- **Fractional Allocation**: Precise resource allocation (0.1-16 GPUs)
+- **Fractional Allocation**: Precise resource allocation (0.1-1.0 GPUs)
 - **Memory Optimization**: HBM memory usage optimization
 - **Power Efficiency**: Dynamic power management and thermal optimization
 
