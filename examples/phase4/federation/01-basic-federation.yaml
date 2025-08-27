@@ -1,0 +1,209 @@
+apiVersion: kaiwo.silogen.ai/v1alpha1
+kind: KaiwoJob
+metadata:
+  name: federated-training-basic
+  namespace: kaiwo-system
+  labels:
+    federation.kaiwo.ai/enabled: "true"
+    federation.kaiwo.ai/strategy: "balanced"
+    workload.kaiwo.ai/type: "distributed-training"
+  annotations:
+    federation.kaiwo.ai/clusters: "cluster-us-east,cluster-eu-west"
+    federation.kaiwo.ai/placement-policy: "high-availability"
+    federation.kaiwo.ai/resource-sharing: "enabled"
+spec:
+  template:
+    spec:
+      containers:
+      - name: pytorch-distributed
+        image: pytorch/pytorch:2.1.0-cuda11.8-cudnn8-runtime
+        resources:
+          requests:
+            cpu: "4"
+            memory: "8Gi"
+            amd.com/gpu: "1"
+          limits:
+            cpu: "8"
+            memory: "16Gi"
+            amd.com/gpu: "1"
+        env:
+        - name: MASTER_ADDR
+          value: "pytorch-master-service"
+        - name: MASTER_PORT
+          value: "29500"
+        - name: WORLD_SIZE
+          value: "4"
+        - name: NCCL_DEBUG
+          value: "INFO"
+        command:
+        - python
+        - -m
+        - torch.distributed.launch
+        - --nproc_per_node=1
+        - --nnodes=4
+        - --master_addr=$(MASTER_ADDR)
+        - --master_port=$(MASTER_PORT)
+        - train_federated.py
+        volumeMounts:
+        - name: training-data
+          mountPath: /data
+        - name: model-output
+          mountPath: /output
+      volumes:
+      - name: training-data
+        persistentVolumeClaim:
+          claimName: federated-training-data
+      - name: model-output
+        persistentVolumeClaim:
+          claimName: federated-model-output
+      restartPolicy: OnFailure
+  # Federation-specific configuration
+  federation:
+    enabled: true
+    strategy: "balanced"
+    clusters:
+    - name: "cluster-us-east"
+      region: "us-east-1"
+      weight: 0.4
+      constraints:
+        maxReplicas: 2
+        requiredLabels:
+          zone: "us-east-1a,us-east-1b"
+    - name: "cluster-eu-west"
+      region: "eu-west-1"
+      weight: 0.6
+      constraints:
+        maxReplicas: 2
+        requiredLabels:
+          zone: "eu-west-1a,eu-west-1b"
+    placement:
+      antiAffinity:
+        required: true
+        scope: "cluster"
+      resourceSharing:
+        enabled: true
+        sharedVolumes: ["training-data"]
+      networkPolicy:
+        crossClusterCommunication: true
+        encryptionRequired: true
+    failover:
+      enabled: true
+      timeout: "10m"
+      maxAttempts: 3
+      backupClusters: ["cluster-ap-south"]
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: federated-training-data
+  namespace: kaiwo-system
+  labels:
+    federation.kaiwo.ai/shared: "true"
+    data.kaiwo.ai/type: "training-dataset"
+spec:
+  accessModes:
+  - ReadOnlyMany
+  resources:
+    requests:
+      storage: 100Gi
+  storageClassName: fast-ssd
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: federated-model-output
+  namespace: kaiwo-system
+  labels:
+    federation.kaiwo.ai/shared: "true"
+    data.kaiwo.ai/type: "model-artifacts"
+spec:
+  accessModes:
+  - ReadWriteMany
+  resources:
+    requests:
+      storage: 50Gi
+  storageClassName: fast-ssd
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: pytorch-master-service
+  namespace: kaiwo-system
+  labels:
+    federation.kaiwo.ai/service-type: "cross-cluster"
+spec:
+  type: ClusterIP
+  ports:
+  - port: 29500
+    targetPort: 29500
+    name: master-port
+  selector:
+    app: federated-training-basic
+    role: master
+---
+apiVersion: federation.kaiwo.ai/v1alpha1
+kind: FederationPolicy
+metadata:
+  name: basic-federation-policy
+  namespace: kaiwo-system
+spec:
+  description: "Basic federation policy for distributed training workloads"
+  placement:
+    strategy: "balanced"
+    clusterPreferences:
+    - name: "cluster-us-east"
+      weight: 40
+      constraints:
+        gpuTypes: ["AMD-MI300X", "AMD-MI250X"]
+        maxLatency: "50ms"
+    - name: "cluster-eu-west"
+      weight: 60
+      constraints:
+        gpuTypes: ["AMD-MI300X", "AMD-MI250X"]
+        maxLatency: "100ms"
+    antiAffinity:
+    - scope: "cluster"
+      workloadSelectors:
+        workload.kaiwo.ai/type: "distributed-training"
+    customRules:
+    - name: "gpu-availability"
+      condition: "cluster.gpu.available >= workload.gpu.required"
+      action: "allow"
+      weight: 100
+    - name: "cost-optimization"
+      condition: "cluster.cost.score > 0.7"
+      action: "prefer"
+      weight: 50
+  resourceAllocation:
+    type: "dynamic"
+    clusterQuotas:
+      "cluster-us-east":
+        cpu: "100"
+        memory: "400Gi"
+        gpu: 20
+        storage: "2Ti"
+      "cluster-eu-west":
+        cpu: "150"
+        memory: "600Gi"
+        gpu: 30
+        storage: "3Ti"
+    dynamicAllocation:
+      enabled: true
+      loadThreshold: 0.8
+      utilizationThreshold: 0.85
+      rebalancingInterval: "5m"
+  failover:
+    autoFailover: true
+    failoverTimeout: "10m"
+    maxAttempts: 3
+    backupClusters: ["cluster-ap-south", "cluster-us-west"]
+  costOptimization:
+    enabled: true
+    preferSpotInstances: false
+    costThreshold: 100.0
+    preemptibleTolerance: true
+  security:
+    dataResidency: ["US", "EU"]
+    complianceRequirements: ["GDPR", "SOX"]
+    networkIsolation: true
+    encryptionRequired: true

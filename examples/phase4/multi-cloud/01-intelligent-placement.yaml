@@ -1,0 +1,406 @@
+apiVersion: kaiwo.silogen.ai/v1alpha1
+kind: KaiwoJob
+metadata:
+  name: multi-cloud-inference
+  namespace: kaiwo-system
+  labels:
+    multicloud.kaiwo.ai/enabled: "true"
+    multicloud.kaiwo.ai/strategy: "ml-driven"
+    workload.kaiwo.ai/type: "inference-serving"
+  annotations:
+    multicloud.kaiwo.ai/cost-optimization: "enabled"
+    multicloud.kaiwo.ai/performance-target: "low-latency"
+    multicloud.kaiwo.ai/placement-algorithm: "ml-driven"
+spec:
+  template:
+    spec:
+      containers:
+      - name: model-server
+        image: tritonserver:22.12-py3
+        resources:
+          requests:
+            cpu: "8"
+            memory: "16Gi"
+            amd.com/gpu: "1"
+          limits:
+            cpu: "16"
+            memory: "32Gi"
+            amd.com/gpu: "1"
+        env:
+        - name: MODEL_REPOSITORY
+          value: "/models"
+        - name: TRITON_LOG_LEVEL
+          value: "INFO"
+        - name: TRITON_STRICT_MODEL_CONFIG
+          value: "false"
+        ports:
+        - containerPort: 8000
+          name: http
+        - containerPort: 8001
+          name: grpc
+        - containerPort: 8002
+          name: metrics
+        volumeMounts:
+        - name: model-repository
+          mountPath: /models
+        livenessProbe:
+          httpGet:
+            path: /v2/health/live
+            port: 8000
+          initialDelaySeconds: 30
+          periodSeconds: 10
+        readinessProbe:
+          httpGet:
+            path: /v2/health/ready
+            port: 8000
+          initialDelaySeconds: 30
+          periodSeconds: 5
+      volumes:
+      - name: model-repository
+        persistentVolumeClaim:
+          claimName: model-repository-pvc
+      restartPolicy: Always
+  # Multi-cloud placement configuration
+  multiCloud:
+    enabled: true
+    strategy: "ml-driven"
+    placementPreferences:
+      costOptimized: true
+      maxCostPerHour: 5.0
+      latencySensitive: true
+      maxLatency: "100ms"
+      dataResidency: ["US", "EU"]
+      compliance: ["SOX", "GDPR"]
+    providers:
+    - name: "aws"
+      weight: 0.4
+      regions: ["us-east-1", "us-west-2", "eu-west-1"]
+      instanceTypes: ["p3.2xlarge", "p3.8xlarge", "g4dn.xlarge"]
+      constraints:
+        maxCostPerHour: 3.0
+        spotInstances: true
+        availabilityZones: ["us-east-1a", "us-east-1b"]
+    - name: "azure"
+      weight: 0.35
+      regions: ["eastus", "westus2", "westeurope"]
+      instanceTypes: ["Standard_NC6s_v3", "Standard_NC12s_v3"]
+      constraints:
+        maxCostPerHour: 3.5
+        reservedInstances: true
+    - name: "gcp"
+      weight: 0.25
+      regions: ["us-central1", "us-west1", "europe-west1"]
+      instanceTypes: ["n1-standard-8", "n1-highmem-8"]
+      gpuTypes: ["nvidia-tesla-v100", "nvidia-tesla-t4"]
+      constraints:
+        maxCostPerHour: 4.0
+        preemptibleInstances: true
+    scheduling:
+      constraints:
+      - type: "resource"
+        field: "gpu.memory"
+        operator: "greater_than"
+        values: ["16GB"]
+        weight: 100
+      - type: "performance"
+        field: "network.latency"
+        operator: "less_than"
+        values: ["50ms"]
+        weight: 80
+      - type: "cost"
+        field: "hourly_cost"
+        operator: "less_than"
+        values: ["5.0"]
+        weight: 60
+      - type: "compliance"
+        field: "data_residency"
+        operator: "in"
+        values: ["US", "EU"]
+        weight: 90
+    elasticScaling:
+      enabled: true
+      minReplicas: 2
+      maxReplicas: 20
+      metrics:
+      - type: "cpu"
+        target: 70
+      - type: "memory"
+        target: 80
+      - type: "custom"
+        name: "requests_per_second"
+        target: 1000
+      scaleUpPolicy:
+        strategy: "proportional"
+        factor: 2.0
+        stabilizationWindow: "3m"
+      scaleDownPolicy:
+        strategy: "gradual"
+        factor: 0.5
+        stabilizationWindow: "5m"
+    costOptimization:
+      enabled: true
+      targetSavings: 0.30
+      strategies:
+      - "spot_instances"
+      - "reserved_instances"
+      - "right_sizing"
+      - "scheduled_scaling"
+      budgetLimits:
+        daily: 120.0
+        monthly: 3000.0
+        perWorkload: 50.0
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: model-repository-pvc
+  namespace: kaiwo-system
+  labels:
+    multicloud.kaiwo.ai/storage-class: "high-performance"
+spec:
+  accessModes:
+  - ReadWriteMany
+  resources:
+    requests:
+      storage: 200Gi
+  storageClassName: fast-ssd-replicated
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: multi-cloud-inference-service
+  namespace: kaiwo-system
+  labels:
+    multicloud.kaiwo.ai/load-balancer: "global"
+  annotations:
+    multicloud.kaiwo.ai/traffic-routing: "latency-based"
+    multicloud.kaiwo.ai/health-checks: "enabled"
+spec:
+  type: LoadBalancer
+  ports:
+  - port: 8000
+    targetPort: 8000
+    name: http
+  - port: 8001
+    targetPort: 8001
+    name: grpc
+  selector:
+    app: multi-cloud-inference
+---
+apiVersion: multicloud.kaiwo.ai/v1alpha1
+kind: MultiCloudPolicy
+metadata:
+  name: intelligent-placement-policy
+  namespace: kaiwo-system
+spec:
+  description: "ML-driven intelligent placement across AWS, Azure, and GCP"
+  placementEngine:
+    algorithm: "ml-driven"
+    learningEnabled: true
+    historicalDataWindow: "30d"
+    confidenceThreshold: 0.85
+    fallbackAlgorithm: "balanced"
+  providers:
+    aws:
+      enabled: true
+      priority: 1
+      credentials:
+        secretRef:
+          name: aws-credentials
+          namespace: kaiwo-system
+      regions:
+      - us-east-1
+      - us-west-2
+      - eu-west-1
+      - ap-southeast-1
+      defaultInstanceType: "p3.2xlarge"
+      spotInstancePreference: true
+      costOptimization:
+        reservedInstanceUsage: 0.6
+        spotInstanceUsage: 0.3
+    azure:
+      enabled: true
+      priority: 2
+      credentials:
+        secretRef:
+          name: azure-credentials
+          namespace: kaiwo-system
+      regions:
+      - eastus
+      - westus2
+      - westeurope
+      - southeastasia
+      defaultInstanceType: "Standard_NC6s_v3"
+      costOptimization:
+        reservedInstanceUsage: 0.7
+        spotInstanceUsage: 0.2
+    gcp:
+      enabled: true
+      priority: 3
+      credentials:
+        secretRef:
+          name: gcp-credentials
+          namespace: kaiwo-system
+      regions:
+      - us-central1
+      - us-west1
+      - europe-west1
+      - asia-southeast1
+      defaultInstanceType: "n1-standard-8"
+      preemptiblePreference: true
+      costOptimization:
+        committedUseDiscount: 0.5
+        preemptibleUsage: 0.4
+  placementCriteria:
+    performance:
+      weight: 0.35
+      metrics:
+      - latency
+      - throughput
+      - availability
+      targets:
+        maxLatency: "100ms"
+        minThroughput: 1000
+        minAvailability: 99.9
+    cost:
+      weight: 0.30
+      budgetConstraints:
+        hourlyLimit: 50.0
+        dailyLimit: 1000.0
+        monthlyLimit: 25000.0
+      savingsTarget: 0.25
+    compliance:
+      weight: 0.20
+      requirements:
+      - GDPR
+      - SOX
+      - HIPAA
+      dataResidency:
+        allowedRegions: ["US", "EU"]
+        restrictedRegions: ["CN", "RU"]
+    reliability:
+      weight: 0.15
+      requirements:
+        minAvailabilityZones: 2
+        autoFailover: true
+        backupRegions: true
+  mlOptimization:
+    enabled: true
+    modelType: "gradient_boosting"
+    features:
+    - historical_performance
+    - cost_trends
+    - resource_utilization
+    - failure_rates
+    - user_preferences
+    trainingSchedule: "0 2 * * *"  # Daily at 2 AM
+    predictionFeatures:
+    - workload_type
+    - resource_requirements
+    - time_of_day
+    - day_of_week
+    - season
+    retrainingTriggers:
+    - accuracy_below: 0.80
+    - data_drift_detected: true
+    - weekly_schedule: true
+  costOptimization:
+    enabled: true
+    strategies:
+      spotInstances:
+        enabled: true
+        maxInterruption: 0.1
+        savingsTarget: 0.60
+      reservedInstances:
+        enabled: true
+        utilizationTarget: 0.85
+        termOptions: ["1year", "3year"]
+      rightSizing:
+        enabled: true
+        utilizationThreshold: 0.70
+        oversizeThreshold: 0.40
+      scheduledScaling:
+        enabled: true
+        businessHours: "09:00-17:00"
+        timezone: "UTC"
+        weekendScaling: 0.3
+    monitoring:
+      budgetAlerts:
+      - threshold: 0.80
+        notification: "warning"
+      - threshold: 0.95
+        notification: "critical"
+      costReporting:
+        frequency: "daily"
+        recipients: ["devops@company.com", "finance@company.com"]
+---
+apiVersion: monitoring.kaiwo.ai/v1alpha1
+kind: MultiCloudMonitoring
+metadata:
+  name: intelligent-placement-monitoring
+  namespace: kaiwo-system
+spec:
+  description: "Comprehensive monitoring for multi-cloud intelligent placement"
+  providers:
+  - aws
+  - azure
+  - gcp
+  metrics:
+    collection:
+      interval: "30s"
+      retention: "30d"
+      aggregation:
+      - "1m"
+      - "5m"
+      - "1h"
+      - "1d"
+    custom:
+    - name: "placement_accuracy"
+      description: "ML placement algorithm accuracy"
+      type: "gauge"
+      labels: ["provider", "region", "algorithm"]
+    - name: "cost_savings"
+      description: "Actual cost savings achieved"
+      type: "counter"
+      labels: ["provider", "optimization_type"]
+    - name: "placement_latency"
+      description: "Time to place workload"
+      type: "histogram"
+      buckets: [0.1, 0.5, 1.0, 2.0, 5.0, 10.0]
+  alerts:
+  - name: "placement_accuracy_low"
+    condition: "placement_accuracy < 0.80"
+    severity: "warning"
+    description: "ML placement accuracy below threshold"
+    runbook: "https://docs.kaiwo.ai/runbooks/placement-accuracy"
+  - name: "cost_budget_exceeded"
+    condition: "hourly_cost > budget_limit * 1.1"
+    severity: "critical"
+    description: "Hourly cost exceeds budget by 10%"
+    runbook: "https://docs.kaiwo.ai/runbooks/cost-overrun"
+  - name: "cross_cloud_latency_high"
+    condition: "avg(cross_cloud_latency) > 200ms"
+    severity: "warning"
+    description: "Cross-cloud communication latency high"
+  dashboards:
+    multiCloudOverview:
+      enabled: true
+      panels:
+      - workload_distribution
+      - cost_by_provider
+      - performance_metrics
+      - placement_accuracy
+    costOptimization:
+      enabled: true
+      panels:
+      - savings_trends
+      - budget_utilization
+      - cost_forecasting
+      - optimization_opportunities
+    performance:
+      enabled: true
+      panels:
+      - latency_distribution
+      - throughput_trends
+      - error_rates
+      - availability_metrics
